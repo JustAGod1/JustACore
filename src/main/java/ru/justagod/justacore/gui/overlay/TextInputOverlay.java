@@ -5,7 +5,7 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.ChatAllowedCharacters;
 import net.minecraft.util.MathHelper;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.illnesses.client.gui.overlay.event.KeyboardListener;
+import ru.justagod.justacore.gui.overlay.event.KeyboardListener;
 
 import java.util.ArrayList;
 import java.util.List;

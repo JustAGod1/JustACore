@@ -1,7 +1,8 @@
 package ru.justagod.justacore.gui.overlay.animation;
 
-import ru.justagod.illnesses.client.gui.overlay.Overlay;
-import ru.justagod.illnesses.client.gui.overlay.ScaledOverlay;
+
+import ru.justagod.justacore.gui.overlay.Overlay;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
 import java.util.LinkedList;
 import java.util.List;

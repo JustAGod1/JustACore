@@ -17,15 +17,19 @@ public interface OverlayParent {
 
     Collection<ScaledOverlay> getOverlays();
 
-    void addOverlays(Collection<ScaledOverlay> overlays);
-
     void setOverlays(OverlaySet overlaySet);
+
+    void addOverlays(Collection<ScaledOverlay> overlays);
 
     void appendOverlays(OverlaySet overlaySet);
 
     void moveUp(ScaledOverlay overlay);
 
     void moveDown(ScaledOverlay overlay);
+
+    void moveToFront(ScaledOverlay overlay);
+
+    void moveToBackground(ScaledOverlay overlay);
 
     double getScaledWidth();
 

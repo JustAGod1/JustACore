@@ -1,7 +1,8 @@
 package ru.justagod.justacore.gui.overlay.animation;
 
-import ru.justagod.illnesses.client.gui.overlay.ScaledOverlay;
-import ru.justagod.illnesses.client.gui.overlay.transform.ColorTransformation;
+
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
+import ru.justagod.justacore.gui.overlay.transform.ColorTransformation;
 
 /**
  * Created by JustAGod on 02.11.17.

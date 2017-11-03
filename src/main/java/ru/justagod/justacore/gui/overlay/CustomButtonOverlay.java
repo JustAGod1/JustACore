@@ -1,10 +1,11 @@
 package ru.justagod.justacore.gui.overlay;
 
+
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StringUtils;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.illnesses.client.gui.overlay.event.MouseClickListener;
+import ru.justagod.justacore.gui.overlay.event.MouseClickListener;
 
 /**
  * Created by JustAGod on 17.10.17.

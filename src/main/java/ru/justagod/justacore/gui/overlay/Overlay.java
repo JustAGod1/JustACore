@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
 import ru.justagod.justacore.gui.overlay.animation.OverlayAnimator;
+import ru.justagod.justacore.helper.Vector;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -108,5 +109,14 @@ public abstract class Overlay {
     public void setPos(Vector pos) {
         this.x = pos.getX();
         this.y = pos.getY();
+    }
+
+    @Override
+    public String toString() {
+        return "\nOverlay{" +
+                "\nx=" + x +
+                "\n, y=" + y +
+                "\n, animators=" + animators +
+                "\n}";
     }
 }

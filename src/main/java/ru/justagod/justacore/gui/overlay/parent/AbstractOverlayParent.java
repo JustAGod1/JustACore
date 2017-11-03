@@ -41,7 +41,7 @@ public abstract class AbstractOverlayParent implements OverlayParent {
 
         if (position != -1) {
             overlays.remove(position);
-            overlays.add(position + 1, overlay);
+            overlays.add(position - 1, overlay);
         }
     }
 
@@ -52,7 +52,7 @@ public abstract class AbstractOverlayParent implements OverlayParent {
 
         if (position != -1) {
             overlays.remove(position);
-            overlays.add(position - 1, overlay);
+            overlays.add(position + 1, overlay);
         }
     }
 
@@ -83,6 +83,24 @@ public abstract class AbstractOverlayParent implements OverlayParent {
             ScaledOverlay overlay = iterator.next();
             overlay.setParent(null);
             iterator.remove();
+        }
+    }
+
+    @Override
+    public void moveToFront(ScaledOverlay overlay) {
+
+        if (overlays.contains(overlay)) {
+            overlays.remove(overlay);
+            overlays.add(0, overlay);
+        }
+    }
+
+    @Override
+    public void moveToBackground(ScaledOverlay overlay) {
+
+        if (overlays.contains(overlay)) {
+            overlays.remove(overlay);
+            overlays.add(overlays.size(), overlay);
         }
     }
 }

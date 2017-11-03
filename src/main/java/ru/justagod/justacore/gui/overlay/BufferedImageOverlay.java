@@ -3,7 +3,7 @@ package ru.justagod.justacore.gui.overlay;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.MathHelper;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.illnesses.helper.TextureHelper;
+import ru.justagod.justacore.helper.TextureHelper;
 
 import java.awt.image.BufferedImage;
 

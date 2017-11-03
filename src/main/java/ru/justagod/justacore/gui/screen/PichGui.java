@@ -5,16 +5,14 @@ import cpw.mods.fml.common.eventhandler.Event;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
+import org.lwjgl.input.Mouse;
 import ru.justagod.justacore.gui.overlay.CenteredTextOverlay;
 import ru.justagod.justacore.gui.overlay.Overlay;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 import ru.justagod.justacore.gui.overlay.parent.OverlayParent;
 import ru.justagod.justacore.gui.overlay.set.OverlaySet;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by JustAGod on 17.10.17.
@@ -22,6 +20,17 @@ import java.util.List;
 public abstract class PichGui extends GuiScreen implements OverlayParent {
 
     protected List<ScaledOverlay> overlays = new ArrayList<ScaledOverlay>();
+
+    protected boolean pauseGame = true;
+
+
+    private boolean released = true;
+    private int lastMouseX = -1;
+    private int lastMouseY = -1;
+
+    public PichGui(boolean pauseGame) {
+        this.pauseGame = pauseGame;
+    }
 
     public PichGui() {
         addOverlay(new CenteredTextOverlay(50, 50, "Пустой Pich GUI"));
@@ -36,8 +45,21 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
         }
     }
 
+    public boolean isPauseGame() {
+        return pauseGame;
+    }
+
+    public void setPauseGame(boolean pauseGame) {
+        this.pauseGame = pauseGame;
+    }
+
     @Override
-    protected void keyTyped(char c, int keyCode) {
+    public boolean doesGuiPauseGame() {
+        return pauseGame;
+    }
+
+    @Override
+    protected synchronized void keyTyped(char c, int keyCode) {
         super.keyTyped(c, keyCode);
         for (int i = 0; i < overlays.size(); i++) {
             ScaledOverlay overlay = overlays.get(i);
@@ -47,7 +69,15 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
     }
 
     @Override
-    protected void mouseClicked(int x, int y, int type) {
+    public void handleMouseInput() {
+        super.handleMouseInput();
+        System.out.println(Mouse.getEventButton());
+        System.out.println(Mouse.getEventButtonState());
+    }
+
+
+    @Override
+    protected synchronized void mouseClicked(int x, int y, int type) {
         super.mouseClicked(x, y, type);
 
         for (int i = 0; i < overlays.size(); i++) {
@@ -72,16 +102,37 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
     protected abstract void doDraw();
 
     @Override
-    public void updateScreen() {
+    public synchronized void updateScreen() {
         super.updateScreen();
 
-        for (Overlay overlay : overlays) {
-            overlay.update();
+        if (!Mouse.isButtonDown(0)) {
+            released = true;
         }
+
+        for (int i = 0; i < overlays.size(); i++) {
+            Overlay overlay = overlays.get(i);
+                overlay.update();
+            }
+
     }
 
+    @Override
+    protected void mouseClickMove(int mouseX, int mouseY, int lastButton, long time) {
+        if (!released) {
 
+            if (lastMouseX != -1 && lastMouseY != -1) {
+                try {
+                    for (ScaledOverlay overlay : overlays) {
+                        overlay.onMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY);
+                    }
+                } catch (ConcurrentModificationException ignored) {
 
+                }
+            }
+        } else released = false;
+        lastMouseX = mouseX;
+        lastMouseY = mouseY;
+    }
 
     @Override
     public synchronized void addOverlay(ScaledOverlay overlay) {
@@ -174,15 +225,34 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
         }
     }
 
-    protected void close() {
+    public void close() {
         PichGui.openPichGui(null);
     }
 
     public void open() {
         PichGui.openPichGui(this);
     }
+
     protected ScaledResolution getResolution() {
         return new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
+    }
+
+    @Override
+    public void moveToFront(ScaledOverlay overlay) {
+
+        if (overlays.contains(overlay)) {
+            overlays.remove(overlay);
+            overlays.add(overlays.size(), overlay);
+        }
+    }
+
+    @Override
+    public void moveToBackground(ScaledOverlay overlay) {
+
+        if (overlays.contains(overlay)) {
+            overlays.remove(overlay);
+            overlays.add(0, overlay);
+        }
     }
 
     public static class OpenPichGuiEvent extends Event {

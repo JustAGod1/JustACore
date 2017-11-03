@@ -6,9 +6,11 @@ import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
 import ru.justagod.justacore.gui.overlay.event.KeyboardListener;
 import ru.justagod.justacore.gui.overlay.event.MouseClickListener;
+import ru.justagod.justacore.gui.overlay.event.MouseDragListener;
 import ru.justagod.justacore.gui.overlay.event.MouseHoverListener;
 import ru.justagod.justacore.gui.overlay.parent.OverlayParent;
 import ru.justagod.justacore.gui.overlay.transform.Transformation;
+import ru.justagod.justacore.helper.Rect;
 import ru.justagod.justacore.helper.Vector;
 
 import java.util.ArrayList;
@@ -27,6 +29,7 @@ public abstract class ScaledOverlay extends Overlay {
     public final List<MouseClickListener> mouseClickListeners = new ArrayList<MouseClickListener>();
     public final List<MouseHoverListener> mouseHoverListeners = new ArrayList<MouseHoverListener>();
     public final List<KeyboardListener> keyboardListeners = new ArrayList<KeyboardListener>();
+    public final List<MouseDragListener> dragListeners = new ArrayList<MouseDragListener>();
     protected double width;
     protected double height;
     protected boolean scalePosition = true;
@@ -116,7 +119,11 @@ public abstract class ScaledOverlay extends Overlay {
         }
     }
 
-    protected double getScaledHeight() {
+    public Rect getMouseRect() {
+        return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + getScaledHeight());
+    }
+
+    public double getScaledHeight() {
         if (isScaleSize()) {
             switch (scaleMode) {
                 case NORMAL:
@@ -194,18 +201,30 @@ public abstract class ScaledOverlay extends Overlay {
 
         if (isPointInBounds(mouseX, mouseY)) {
             for (MouseHoverListener listener : mouseHoverListeners) {
-                listener.onClick(mouseX - getScaledX(), mouseY - getScaledY(), this);
+                listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
             }
         }
         runTransformations();
         if (isDoScissor())
             realScissor(getScaledX() / getScreenScaledWidth(), getScaledY() / getScreenScaledHeight(), getScaledWidth() / getScreenScaledWidth(), getHeight() / getScreenScaledHeight());
 
-        doDraw(getScaledX(), getScaledY(), getScaledWidth(), getScaledHeight(), partialTick, mouseX, mouseY, isPointInBounds(mouseX, mouseY));
+        doDraw(getScaledX(), getScaledY(), getScaledWidth(), getScaledHeight(), partialTick, mouseX, mouseY, isInMouseRect(mouseX, mouseY));
 
         GL11.glEnable(GL11.GL_CULL_FACE);
         if (isDoScissor())
             glDisable(GL_SCISSOR_TEST);
+    }
+
+    public void onMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
+        if (isInMouseRect(lastMouseX, lastMouseY)) {
+            for (MouseDragListener listener : dragListeners) {
+                listener.onDrag(this, new Vector(lastMouseX / getXFactor(), lastMouseY / getYFactor()), new Vector(mouseX / getXFactor(), mouseY / getYFactor()));
+            }
+        }
+    }
+
+    protected boolean isInMouseRect(double x, double y) {
+        return getMouseRect().isVectorInBounds(new Vector(x, y));
     }
 
     public int getScreenScaledWidth() {
@@ -253,14 +272,14 @@ public abstract class ScaledOverlay extends Overlay {
         glDisable(GL11.GL_CULL_FACE);
         if (isPointInBounds(mouseX, mouseY)) {
             for (MouseHoverListener listener : mouseHoverListeners) {
-                listener.onClick(mouseX - getScaledX(), mouseY - getScaledY(), this);
+                listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
             }
         }
         runTransformations();
         if (isDoScissor())
             realScissor(getScaledX() / getScreenScaledWidth(), getScaledY() / getScreenScaledHeight(), getScaledWidth() / getScreenScaledWidth(), getHeight() / getScreenScaledHeight());
 
-        doDrawText(getScaledX(), getScaledY(), getScaledWidth(), getScaledHeight(), partialTick, mouseX, mouseY, isPointInBounds(mouseX, mouseY));
+        doDrawText(getScaledX(), getScaledY(), getScaledWidth(), getScaledHeight(), partialTick, mouseX, mouseY, isInMouseRect(mouseX, mouseY));
 
         GL11.glEnable(GL11.GL_CULL_FACE);
         if (isDoScissor())
@@ -297,19 +316,39 @@ public abstract class ScaledOverlay extends Overlay {
 
     @Override
     public String toString() {
-        return "ScaledOverlay{" +
-                "width=" + width +
-                ", height=" + height +
-                ", scalePosition=" + scalePosition +
-                ", scaleSize=" + scaleSize +
-                ", parent=" + parent +
-                ", scaled width=" + getScaledWidth() +
-                ", scaled height=" + getScaledHeight() +
-                '}';
+        return "\nScaledOverlay{" +
+                "\ntransformations=" + transformations +
+                "\n, mouseClickListeners=" + mouseClickListeners +
+                "\n, mouseHoverListeners=" + mouseHoverListeners +
+                "\n, keyboardListeners=" + keyboardListeners +
+                "\n, dragListeners=" + dragListeners +
+                "\n, width=" + width +
+                "\n, height=" + height +
+                "\n, scalePosition=" + scalePosition +
+                "\n, scaleSize=" + scaleSize +
+                "\n, doScissor=" + doScissor +
+                "\n, isFocused=" + isFocused +
+                "\n, scaleMode=" + scaleMode +
+                "\n, parent=" + parent +
+                "\n, scaledDimensions=" + getDimensions() +
+                "\n} " + super.toString();
     }
 
     public Vector getScaledPos() {
         return new Vector(getScaledX(), getScaledY());
+    }
+
+    public Vector getDimensions() {
+        return new Vector(getScaledWidth(), getScaledHeight());
+    }
+
+
+    public void toFront() {
+        parent.moveToFront(this);
+    }
+
+    public void toBackground() {
+        parent.moveToBackground(this);
     }
 
     public enum ScaleMode {

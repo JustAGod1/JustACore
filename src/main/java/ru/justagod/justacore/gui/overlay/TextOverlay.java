@@ -49,7 +49,7 @@ public class TextOverlay extends ScaledOverlay {
     }
 
     @Override
-    protected double getScaledHeight() {
+    public double getScaledHeight() {
         return 8;
     }
 }

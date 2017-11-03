@@ -83,6 +83,24 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
     }
 
     @Override
+    public void moveToFront(ScaledOverlay overlay) {
+
+        if (overlays.contains(overlay)) {
+            overlays.remove(overlay);
+            overlays.add(0, overlay);
+        }
+    }
+
+    @Override
+    public void moveToBackground(ScaledOverlay overlay) {
+
+        if (overlays.contains(overlay)) {
+            overlays.remove(overlay);
+            overlays.add(overlays.size(), overlay);
+        }
+    }
+
+    @Override
     public double getScaledWidth() {
         return super.getScaledWidth();
     }

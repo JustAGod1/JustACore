@@ -101,12 +101,12 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
     }
 
     @Override
-    public double getScaledWidth() {
+    public double getParentWidth() {
         return super.getScaledWidth();
     }
 
     @Override
-    public double getScaledHeight() {
+    public double getParentHeight() {
         return super.getScaledHeight();
     }
 

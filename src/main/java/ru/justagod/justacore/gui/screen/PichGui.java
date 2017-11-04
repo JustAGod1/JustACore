@@ -28,6 +28,8 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
     private int lastMouseX = -1;
     private int lastMouseY = -1;
 
+    private Object writeMutex = new Object();
+
     public PichGui(boolean pauseGame) {
         this.pauseGame = pauseGame;
     }
@@ -71,8 +73,12 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
     @Override
     public void handleMouseInput() {
         super.handleMouseInput();
-        System.out.println(Mouse.getEventButton());
-        System.out.println(Mouse.getEventButtonState());
+        int scrollAmount = Mouse.getDWheel();
+        if (scrollAmount != 0) {
+            for (ScaledOverlay overlay : overlays) {
+                overlay.onMouseScroll(Mouse.getX(), Mouse.getY(), scrollAmount);
+            }
+        }
     }
 
 
@@ -195,12 +201,12 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
     }
 
     @Override
-    public double getScaledWidth() {
+    public double getParentWidth() {
         return getResolution().getScaledWidth();
     }
 
     @Override
-    public double getScaledHeight() {
+    public double getParentHeight() {
         return getResolution().getScaledHeight();
     }
 

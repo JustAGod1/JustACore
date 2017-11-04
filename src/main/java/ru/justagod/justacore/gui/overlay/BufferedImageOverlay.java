@@ -18,7 +18,7 @@ public class BufferedImageOverlay extends ScaledOverlay {
     protected int textureId = -1;
 
 
-    public BufferedImageOverlay(int x, int y, int width, int height, BufferedImage image) {
+    public BufferedImageOverlay(double x, double y, double width, double height, BufferedImage image) {
         super(x, y, width, height);
         this.image = image;
     }

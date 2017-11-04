@@ -31,9 +31,9 @@ public interface OverlayParent {
 
     void moveToBackground(ScaledOverlay overlay);
 
-    double getScaledWidth();
+    double getParentWidth();
 
-    double getScaledHeight();
+    double getParentHeight();
 
     double getScaledX();
 

@@ -65,12 +65,12 @@ public final class InGameOverlays extends AbstractOverlayParent {
 
 
     @Override
-    public double getScaledWidth() {
+    public double getParentWidth() {
         return getResolution().getScaledWidth();
     }
 
     @Override
-    public double getScaledHeight() {
+    public double getParentHeight() {
         return getResolution().getScaledHeight();
     }
 

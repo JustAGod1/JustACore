@@ -4,10 +4,7 @@ package ru.justagod.justacore.gui.overlay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.justacore.gui.overlay.event.KeyboardListener;
-import ru.justagod.justacore.gui.overlay.event.MouseClickListener;
-import ru.justagod.justacore.gui.overlay.event.MouseDragListener;
-import ru.justagod.justacore.gui.overlay.event.MouseHoverListener;
+import ru.justagod.justacore.gui.overlay.event.*;
 import ru.justagod.justacore.gui.overlay.parent.OverlayParent;
 import ru.justagod.justacore.gui.overlay.transform.Transformation;
 import ru.justagod.justacore.helper.Rect;
@@ -30,6 +27,7 @@ public abstract class ScaledOverlay extends Overlay {
     public final List<MouseHoverListener> mouseHoverListeners = new ArrayList<MouseHoverListener>();
     public final List<KeyboardListener> keyboardListeners = new ArrayList<KeyboardListener>();
     public final List<MouseDragListener> dragListeners = new ArrayList<MouseDragListener>();
+    public final List<MouseScrollingListener> scrollingListeners = new ArrayList<MouseScrollingListener>();
     protected double width;
     protected double height;
     protected boolean scalePosition = true;
@@ -95,11 +93,11 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     protected double getXFactor() {
-        return parent.getScaledWidth() / BOUND;
+        return parent.getParentWidth() / BOUND;
     }
 
     protected double getYFactor() {
-        return parent.getScaledHeight() / BOUND;
+        return parent.getParentHeight() / BOUND;
     }
 
     public double getScaledWidth() {
@@ -194,6 +192,24 @@ public abstract class ScaledOverlay extends Overlay {
         }
     }
 
+    public boolean onMouseScroll(int mouseX, int mouseY, int scrollAmount) {
+
+        mouseX /= Minecraft.getMinecraft().displayWidth / getResolution().getScaledWidth();
+        mouseY /= Minecraft.getMinecraft().displayHeight / getResolution().getScaledHeight();
+
+        if (getMouseRect().isVectorInBounds(new Vector(mouseX, mouseY))) {
+            for (MouseScrollingListener listener : scrollingListeners) {
+                listener.onMouseScroll(scrollAmount, mouseX, mouseY, this);
+            }
+            return doMouseScroll(mouseX * getXFactor(), mouseY * getYFactor(), scrollAmount) || scrollingListeners.size() > 0;
+        }
+        return false;
+    }
+
+    protected boolean doMouseScroll(double relativeMouseX, double relativeMouseY, int scrollAmount) {
+        return false;
+    }
+
     @Override
     public synchronized void draw(float partialTick, int mouseX, int mouseY) {
         GL11.glColor3d(1, 1, 1);
@@ -255,10 +271,7 @@ public abstract class ScaledOverlay extends Overlay {
         int displayWidth = Minecraft.getMinecraft().displayWidth;
         int displayHeight = Minecraft.getMinecraft().displayHeight;
 
-        x /= BOUND;
-        y /= BOUND;
-        width /= BOUND;
-        height /= BOUND;
+
 
         glScissor((int) (x * displayWidth), (int) (y * displayHeight), (int) (width * displayWidth), (int) (height * displayHeight));
 

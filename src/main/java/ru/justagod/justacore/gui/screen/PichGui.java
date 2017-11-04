@@ -75,8 +75,14 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
         super.handleMouseInput();
         int scrollAmount = Mouse.getDWheel();
         if (scrollAmount != 0) {
+            int mouseX = Mouse.getX();
+            int mouseY = Mouse.getY();
+            mouseX /= Minecraft.getMinecraft().displayWidth / getResolution().getScaledWidth();
+
+            mouseY = Minecraft.getMinecraft().displayHeight - mouseY;
+            mouseY /= Minecraft.getMinecraft().displayHeight / getResolution().getScaledHeight();
             for (ScaledOverlay overlay : overlays) {
-                overlay.onMouseScroll(Mouse.getX(), Mouse.getY(), scrollAmount);
+                overlay.onMouseScroll(mouseX, mouseY, scrollAmount);
             }
         }
     }
@@ -86,7 +92,7 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
     protected synchronized void mouseClicked(int x, int y, int type) {
         super.mouseClicked(x, y, type);
 
-        for (int i = 0; i < overlays.size(); i++) {
+        for (int i = overlays.size() - 1; i >= 0; i--) {
             ScaledOverlay overlay = overlays.get(i);
             if (overlay.onClick(x, y)) return;
         }
@@ -94,18 +100,23 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
 
     @Override
     public synchronized void drawScreen(int mouseX, int mouseY, float partialTick) {
-        super.drawScreen(mouseX, mouseY, partialTick);
-        drawDefaultBackground();
+
+        doPreDraw(mouseX, mouseY, partialTick);
 
         for (int i = 0; i < overlays.size(); i++) {
             Overlay overlay = overlays.get(i);
             overlay.draw(partialTick, mouseX, mouseY);
             overlay.drawText(partialTick, mouseX, mouseY);
         }
-        doDraw();
+        doPostDraw(mouseX, mouseY, partialTick);
     }
 
-    protected abstract void doDraw();
+    protected void doPostDraw(int mouseX, int mouseY, float partialTick) {}
+
+    protected void doPreDraw(int mouseX, int mouseY, float partialTick) {
+        super.drawScreen(mouseX, mouseY, partialTick);
+        drawDefaultBackground();
+    }
 
     @Override
     public synchronized void updateScreen() {
@@ -128,8 +139,11 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
 
             if (lastMouseX != -1 && lastMouseY != -1) {
                 try {
-                    for (ScaledOverlay overlay : overlays) {
-                        overlay.onMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY);
+                    for (int i = overlays.size() - 1; i >= 0; i--) {
+                        ScaledOverlay overlay = overlays.get(i);
+                        if (overlay.onMouseDrag(lastMouseX / getParentWidth() * 100, lastMouseY / getParentHeight() * 100, mouseX / getParentWidth() * 100, mouseY / getParentHeight() * 100)) {
+                            return;
+                        }
                     }
                 } catch (ConcurrentModificationException ignored) {
 

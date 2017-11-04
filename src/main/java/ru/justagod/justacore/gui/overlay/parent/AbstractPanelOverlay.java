@@ -120,13 +120,7 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
         return super.getScaledY();
     }
 
-    @Override
-    public boolean onClick(int x, int y) {
-        for (ScaledOverlay overlay : overlays) {
-            if (overlay.onClick(x, y)) return true;
-        }
-        return super.onClick(x, y);
-    }
+
 
     @Override
     protected void doDraw(double xPos, double yPos, double width, double height, float partialTick, int mouseX, int mouseY, boolean mouseInBounds) {

@@ -3,9 +3,8 @@ package ru.justagod.justacore.helper;
 import net.minecraft.client.renderer.Tessellator;
 import org.lwjgl.opengl.GL11;
 
-import static java.lang.Math.cos;
-import static java.lang.Math.sin;
-import static java.lang.Math.toRadians;
+import static java.lang.Math.*;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * Created by JustAGod on 03.11.17.
@@ -34,5 +33,14 @@ public final class DrawHelper {
         }
 
         t.draw();
+    }
+
+    public static void enableAlpha() {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_BLEND);
+    }
+
+    public static void disableAlpha() {
+        glDisable(GL_BLEND);
     }
 }

@@ -5,19 +5,19 @@ package ru.justagod.justacore.helper;
  */
 public class Rect {
 
-    private Vector uprigth;
-    private Vector downleft;
+    private Vector upleft;
+    private Vector downright;
 
     public Rect(double x1, double y1, double x2, double y2) {
         this(new Vector(x1, y1), new Vector(x2, y2));
     }
 
-    public Rect(Vector uprigth, Vector downleft) {
-        this.uprigth = uprigth;
-        this.downleft = downleft;
+    public Rect(Vector uprigth, Vector downright) {
+        this.upleft = uprigth;
+        this.downright = downright;
     }
 
     public boolean isVectorInBounds(Vector vector) {
-        return vector.subtract(uprigth).length() <= downleft.subtract(uprigth).length() && downleft.subtract(vector).length() <= downleft.subtract(uprigth).length();
+        return vector.getX() <= downright.getX() && vector.getX() >= upleft.getX() && vector.getY() <= downright.getY() && vector.getY() >= upleft.getY();
     }
 }

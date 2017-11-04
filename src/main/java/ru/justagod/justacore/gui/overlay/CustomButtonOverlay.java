@@ -5,7 +5,6 @@ import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StringUtils;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.justacore.gui.overlay.event.MouseClickListener;
 
 /**
  * Created by JustAGod on 17.10.17.
@@ -20,12 +19,6 @@ public class CustomButtonOverlay extends ScaledOverlay {
     public CustomButtonOverlay(double x, double y, ResourceLocation texture, String text, final Runnable onClick) {
         this(x, y, 20, 2, texture, text, onClick);
         setDoScissor(true);
-        mouseClickListeners.add(new MouseClickListener() {
-            @Override
-            public void onClick(double x, double y, ScaledOverlay overlay) {
-                onClick.run();
-            }
-        });
     }
 
     public CustomButtonOverlay(double x, double y, double width, double height, ResourceLocation texture, String text, final Runnable onClick) {
@@ -34,18 +27,14 @@ public class CustomButtonOverlay extends ScaledOverlay {
         this.text = text;
         this.onClick = onClick;
         setDoScissor(true);
-        mouseClickListeners.add(new MouseClickListener() {
-            @Override
-            public void onClick(double x, double y, ScaledOverlay overlay) {
-                onClick.run();
-            }
-        });
+
     }
 
     public CustomButtonOverlay localize() {
         text = I18n.format(text);
         return this;
     }
+
 
 
 

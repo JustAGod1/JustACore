@@ -1,8 +1,8 @@
 package ru.justagod.justacore.example.gui;
 
 import ru.justagod.justacore.gui.overlay.*;
-import ru.justagod.justacore.gui.overlay.event.MouseClickListener;
 import ru.justagod.justacore.gui.overlay.event.MouseDragListener;
+import ru.justagod.justacore.gui.overlay.parent.OverlayParent;
 import ru.justagod.justacore.gui.screen.PichGui;
 import ru.justagod.justacore.helper.Dimensions;
 import ru.justagod.justacore.helper.Vector;
@@ -30,38 +30,32 @@ public class SimpleGui extends PichGui {
         final ScrollingOverlay scrollingOverlay = new ScrollingOverlay(2, 50, 96, 48, new Dimensions(1000, 1000));
         //scrollingOverlay.setScaleMode(ScaledOverlay.ScaleMode.HEIGHT_EQUAL_WIDTH);
         addOverlay(scrollingOverlay);
-        ColorOverlay o;
+
         addOverlay(new TextOverlay(0, 0, "Хлюп"));
-        scrollingOverlay.addOverlay(new ButtonOverlay(0, 0, 10, 4, "Хлюп", new Runnable() {
+        scrollingOverlay.addOverlay(new ColorButtonOverlay(0, 0, 10, 4, "Хлюп", new Runnable() {
             @Override
             public void run() {
-
+                generateNew(scrollingOverlay);
             }
-        }));
+        }, 1, 0.5, 0.5, 1));
 
-        for (int i = 0; i < 400; i++) {
-
-            o = new ColorOverlay(randomFloat(0, 100), randomFloat(0, 100), 10, 10, randomFloat(0, 1), randomFloat(0, 1), randomFloat(0, 1), randomFloat(0, 1));
-            o.mouseClickListeners.add(new MouseClickListener() {
-                @Override
-                public void onClick(double x, double y, ScaledOverlay overlay) {
-                    ColorOverlay ov = (ColorOverlay) overlay;
-                    ov.setRed(randomFloat(0, 1));
-                    ov.setGreen(randomFloat(0, 1));
-                    ov.setBlue(randomFloat(0, 1));
-                    ov.setAlpha(randomFloat(0, 1));
-
-                }
-            });
-            o.dragListeners.add(new MouseDragListener() {
-                @Override
-                public void onDrag(ScaledOverlay scaledOverlay, Vector from, Vector to) {
-                    scaledOverlay.setPos(to);
-                }
-            });
-            o.setScaleSize(false);
-            scrollingOverlay.addOverlay(o);
+        for (int i = 0; i < 1; i++) {
+            generateNew(scrollingOverlay);
         }
+    }
+
+    private void generateNew(OverlayParent parent) {
+        ColorOverlay o = new ColorOverlay(randomFloat(0, 100), randomFloat(0, 100), 10, 10, 1, randomFloat(0, 1), randomFloat(0, 1), randomFloat(0, 1));
+
+        o.dragListeners.add(new MouseDragListener() {
+            @Override
+            public void onDrag(ScaledOverlay scaledOverlay, Vector from, Vector to) {
+                scaledOverlay.setScaledPos(to.subtract(new Vector(5, 5)));
+            }
+        });
+        o.setScaleSize(false);
+        parent.addOverlay(o);
+
     }
 
 

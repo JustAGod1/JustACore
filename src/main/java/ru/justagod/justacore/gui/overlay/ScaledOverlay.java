@@ -82,7 +82,7 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public void setScaledX(double scaledX) {
-        x = (isScalePosition() ? (scaledX / getXFactor()) : scaledX) + parent.getScaledX();
+        x = (isScalePosition() ? ((scaledX - parent.getScaledX()) / getXFactor()) : scaledX - parent.getScaledX());
     }
 
     protected double getScaledY() {
@@ -90,7 +90,7 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public void setScaledY(double scaledY) {
-        y = (isScalePosition() ? (scaledY / getYFactor()) : scaledY) + parent.getScaledY();
+        y = (isScalePosition() ? ((scaledY - parent.getScaledY()) / getYFactor()) : scaledY - parent.getScaledY());
     }
 
     public double getXFactor() {
@@ -119,6 +119,8 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public Rect getMouseRect() {
+
+
         return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + getScaledHeight());
     }
 
@@ -193,11 +195,7 @@ public abstract class ScaledOverlay extends Overlay {
         }
     }
 
-    public boolean onMouseScroll(int mouseX, int mouseY, int scrollAmount) {
-
-
-
-
+    public boolean onMouseScroll(double mouseX, double mouseY, int scrollAmount) {
 
         if (getMouseRect().isVectorInBounds(new Vector(mouseX, mouseY))) {
             for (MouseScrollingListener listener : scrollingListeners) {
@@ -238,7 +236,7 @@ public abstract class ScaledOverlay extends Overlay {
         }
     }
 
-    public boolean onMouseDrag(double lastMouseX, double lastMouseY, double mouseX, double mouseY) {
+    public boolean onMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
         if (isInMouseRect(lastMouseX, lastMouseY)) {
             for (MouseDragListener listener : dragListeners) {
                 listener.onDrag(this, new Vector(lastMouseX, lastMouseY), new Vector(mouseX, mouseY));
@@ -248,7 +246,7 @@ public abstract class ScaledOverlay extends Overlay {
         return false;
     }
 
-    protected boolean doMouseDrag(double lastMouseX, double lastMouseY, double mouseX, double mouseY) {
+    protected boolean doMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
         return false;
     }
 

@@ -7,5 +7,5 @@ import ru.justagod.justacore.gui.overlay.ScaledOverlay;
  */
 public interface MouseScrollingListener {
 
-    void onMouseScroll(int scrollAmount, int mouseX, int mouseY, ScaledOverlay overlay);
+    void onMouseScroll(int scrollAmount, double mouseX, double mouseY, ScaledOverlay overlay);
 }

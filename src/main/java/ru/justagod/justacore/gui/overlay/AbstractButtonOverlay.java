@@ -7,7 +7,7 @@ import net.minecraft.client.resources.I18n;
  */
 public abstract class AbstractButtonOverlay extends ScaledOverlay {
 
-    private String text;
+    protected String text;
     private Runnable onClick;
 
 

@@ -77,10 +77,12 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
         if (scrollAmount != 0) {
             int mouseX = Mouse.getX();
             int mouseY = Mouse.getY();
-            mouseX /= Minecraft.getMinecraft().displayWidth / getResolution().getScaledWidth();
 
             mouseY = Minecraft.getMinecraft().displayHeight - mouseY;
+
+            mouseX /= Minecraft.getMinecraft().displayWidth / getResolution().getScaledWidth();
             mouseY /= Minecraft.getMinecraft().displayHeight / getResolution().getScaledHeight();
+
             for (ScaledOverlay overlay : overlays) {
                 overlay.onMouseScroll(mouseX, mouseY, scrollAmount);
             }
@@ -141,7 +143,7 @@ public abstract class PichGui extends GuiScreen implements OverlayParent {
                 try {
                     for (int i = overlays.size() - 1; i >= 0; i--) {
                         ScaledOverlay overlay = overlays.get(i);
-                        if (overlay.onMouseDrag(lastMouseX / getParentWidth() * 100, lastMouseY / getParentHeight() * 100, mouseX / getParentWidth() * 100, mouseY / getParentHeight() * 100)) {
+                        if (overlay.onMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY)) {
                             return;
                         }
                     }

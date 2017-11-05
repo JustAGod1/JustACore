@@ -75,15 +75,14 @@ public class ScrollingOverlay extends AbstractPanelOverlay {
         return -max(0, (position - height));
     }
 
-    @Override
-    public boolean onClick(int x, int y) {
-        return super.onClick(x, y);
-    }
 
     @Override
     protected boolean doMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
+
+
         for (int i = overlays.size() - 1; i >= 0; i--) {
             ScaledOverlay overlay = overlays.get(i);
+
 
             if (overlay.onMouseDrag(lastMouseX, (int) (lastMouseY - getTranslationValue()), mouseX, (int) (mouseY - getTranslationValue()))) {
                 return true;
@@ -96,7 +95,7 @@ public class ScrollingOverlay extends AbstractPanelOverlay {
     protected synchronized boolean doClick(int x, int y) {
         for (int i = overlays.size() - 1; i >= 0; i--) {
             ScaledOverlay overlay = overlays.get(i);
-            if(overlay.onClick(x, (int) (y - getTranslationValue()))) {
+            if (overlay.onClick(x, (int) (y - getTranslationValue()))) {
                 return true;
             }
         }

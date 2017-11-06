@@ -49,6 +49,7 @@ public class ColorButtonOverlay extends AbstractButtonOverlay {
             GL11.glBindTexture(GL11.GL_TEXTURE_2D, -1);
             GL11.glColor4d(red, green, blue, alpha);
             DrawHelper.enableAlpha();
+
             t.startDrawingQuads();
             t.addVertex(0, 0, 0);
             t.addVertex(width, 0, 0);
@@ -56,7 +57,17 @@ public class ColorButtonOverlay extends AbstractButtonOverlay {
             t.addVertex(0, height, 0);
             t.draw();
 
-            drawCentredString(text, (int) (width / 2), 0, false);
+            if (mouseInBounds) {
+                GL11.glColor4d(0.8, 0.8, 1, 0.2);
+                t.startDrawingQuads();
+                t.addVertex(0, 0, 0);
+                t.addVertex(width, 0, 0);
+                t.addVertex(width, height, 0);
+                t.addVertex(0, height, 0);
+                t.draw();
+            }
+
+            drawCentredString(text, (int) (width / 2), (int) (height / 2 - 8), false);
             DrawHelper.disableAlpha();
         }
         pop();

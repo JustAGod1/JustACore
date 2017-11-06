@@ -30,12 +30,27 @@ public class ScissorHelper {
 
     }
 
+
     public static void realScissor(int x, int y, int width, int height) {
-        glScissor(x, y, width, height);
 
-        currentScissor = new Scissor(x, y, width, height);
+        Scissor scissor;
+        if (scissors.size() > 0) {
+            scissor = scissors.peek();
+            scissor = scissor.intersection(new Scissor(x, y, width, height));
 
-        if (!glIsEnabled(GL_SCISSOR_TEST))
+            if (scissor == null) {
+                currentScissor = scissors.peek();
+                return;
+            }
+        } else {
+            scissor = new Scissor(x, y, width, height);
+        }
+
+        glScissor(scissor.getX(), scissor.getY(), scissor.getWidth(), scissor.getHeight());
+
+        currentScissor = scissor;
+
+
         GL11.glEnable(GL_SCISSOR_TEST);
     }
 
@@ -43,30 +58,24 @@ public class ScissorHelper {
         if (currentScissor != null) {
             scissors.push(currentScissor);
         }
+
     }
+
 
     public static void pop() {
         if (scissors.size() > 0) {
-        Scissor scissor = scissors.pop();
+            Scissor scissor = scissors.pop();
 
-            realScissor(scissor.x, scissor.y, scissor.width, scissor.height);
+            realScissor(scissor.getX(), scissor.getY(), scissor.getWidth(), scissor.getHeight());
         } else {
             glDisable(GL_SCISSOR_TEST);
             currentScissor = null;
         }
+
     }
 
-    private static class Scissor {
-        private int x;
-        private int y;
-        private int width;
-        private int height;
 
-        public Scissor(int x, int y, int width, int height) {
-            this.x = x;
-            this.y = y;
-            this.width = width;
-            this.height = height;
-        }
-    }
+
+
+
 }

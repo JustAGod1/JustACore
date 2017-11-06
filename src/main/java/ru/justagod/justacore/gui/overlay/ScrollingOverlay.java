@@ -6,6 +6,7 @@ import ru.justagod.justacore.gui.overlay.parent.AbstractPanelOverlay;
 import ru.justagod.justacore.helper.Dimensions;
 import ru.justagod.justacore.helper.DrawHelper;
 import ru.justagod.justacore.helper.MathHelper;
+import ru.justagod.justacore.helper.ScissorHelper;
 
 import static org.lwjgl.opengl.GL11.glColor4d;
 
@@ -51,10 +52,10 @@ public class ScrollingOverlay extends AbstractPanelOverlay {
 
         GL11.glTranslated(0, getTranslationValue(), 0);
 
-        double tmp = ScaledOverlay.yTranslation;
-        ScrollingOverlay.yTranslation = tmp + getTranslationValue();
+        ScissorHelper.pushTranslation();
+        ScissorHelper.translate(0, (int) getTranslationValue());
         super.doDraw(xPos, yPos, width, height, partialTick, mouseX, (int) (mouseY - getTranslationValue()), mouseInBounds);
-        ScaledOverlay.yTranslation = tmp;
+        ScissorHelper.popTranslation();
         GL11.glTranslated(0, -getTranslationValue(), 0);
         pushAndTranslate(xPos, yPos);
         drawCarriage();
@@ -100,10 +101,10 @@ public class ScrollingOverlay extends AbstractPanelOverlay {
         t.draw();
         GL11.glTranslated(0, getTranslationValue(), 0);
 
-        double tmp = ScaledOverlay.yTranslation;
-        ScrollingOverlay.yTranslation = tmp + getTranslationValue();
+        ScissorHelper.pushTranslation();
+        ScissorHelper.translate(0, (int) getTranslationValue());
         super.doDrawText(xPos, yPos, width, height, partialTick, mouseX, (int) (mouseY - getTranslationValue()), mouseInBounds);
-        ScaledOverlay.yTranslation = tmp;
+        ScissorHelper.popTranslation();
         GL11.glTranslated(0, -getTranslationValue(), 0);
     }
 

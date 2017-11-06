@@ -34,7 +34,7 @@ public class SimpleGui extends PichGui {
 
 
 
-        final ScrollingOverlay scrollingOverlay = new ScrollingOverlay(2, 50, 96, 48, new Dimensions(500, 500));
+        final ScrollingOverlay scrollingOverlay = new ScrollingOverlay(2, 50, 96, 48, new Dimensions(2000, 2000));
         //scrollingOverlay.setScaleMode(ScaledOverlay.ScaleMode.HEIGHT_EQUAL_WIDTH);
         addOverlay(scrollingOverlay);
 
@@ -45,10 +45,11 @@ public class SimpleGui extends PichGui {
 
         ColorButtonOverlay button = new ColorButtonOverlay(2, 5, 20, 20, "Добавить", () -> generateNew(scrollingOverlay), 1, 0.5, 0.5, 1);
         scrollingOverlay.addOverlay(button);
+        scrollingOverlay.addOverlay(new TextInputOverlay(50, 50, 10, 2));
 
         button.setScaleMode(ScaledOverlay.ScaleMode.DONT_SCALE_HEIGHT);
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 10000; i++) {
             generateNew(scrollingOverlay);
         }
     }
@@ -58,7 +59,6 @@ public class SimpleGui extends PichGui {
 
         o.dragListeners.add((scaledOverlay, from, to) -> scaledOverlay.setScaledPos(to.subtract(new Vector(5, 5))));
         o.setScaleSize(false);
-        o.setDoScissor(true);
         parent.addOverlay(o);
 
     }

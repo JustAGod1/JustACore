@@ -15,7 +15,6 @@ import java.util.List;
  */
 public class TextInputOverlay extends ScaledOverlay  {
 
-    private boolean isFocused;
     private boolean isEnabled = true;
     private List<Character> text = new ArrayList<Character>();
     private int selectionPos = 0;
@@ -183,13 +182,7 @@ public class TextInputOverlay extends ScaledOverlay  {
         }
     }
 
-    @Override
-    public boolean onClick(int mouseX, int mouseY) {
-        double xClick = mouseX - getScaledX();
-        double yClick = mouseY - getScaledY();
 
-        return isFocused = (xClick >= 0 && xClick <= getScaledWidth()) && (yClick >= 0 && yClick <= getScaledHeight());
-    }
 
 
 

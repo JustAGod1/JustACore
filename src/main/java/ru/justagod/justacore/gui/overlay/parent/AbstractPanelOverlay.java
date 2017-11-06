@@ -141,6 +141,15 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
     }
 
     @Override
+    public void doOnKey(char key, int code) {
+        for (ScaledOverlay overlay : overlays) {
+            if (overlay.onKey(key, code)) {
+                break;
+            }
+        }
+    }
+
+    @Override
     public void addOverlays(Collection<ScaledOverlay> overlays) {
         for (ScaledOverlay overlay : overlays) {
             addOverlay(overlay);

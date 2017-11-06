@@ -24,17 +24,15 @@ public abstract class ScaledOverlay extends Overlay {
 
     public static final int BOUND = 100;
 
-    public static int xTranslation;
-    public static double yTranslation;
 
     // Listeners
-    public final List<Transformation> transformations = new ArrayList<Transformation>();
-    public final List<MouseClickListener> mouseDoubleClickListeners = new ArrayList<MouseClickListener>();
-    public final List<MouseClickListener> mouseClickListeners = new ArrayList<MouseClickListener>();
-    public final List<MouseHoverListener> mouseHoverListeners = new ArrayList<MouseHoverListener>();
-    public final List<KeyboardListener> keyboardListeners = new ArrayList<KeyboardListener>();
-    public final List<MouseDragListener> dragListeners = new ArrayList<MouseDragListener>();
-    public final List<MouseScrollingListener> scrollingListeners = new ArrayList<MouseScrollingListener>();
+    public final List<Transformation> transformations = new ArrayList<>();
+    public final List<MouseClickListener> mouseDoubleClickListeners = new ArrayList<>();
+    public final List<MouseClickListener> mouseClickListeners = new ArrayList<>();
+    public final List<MouseHoverListener> mouseHoverListeners = new ArrayList<>();
+    public final List<KeyboardListener> keyboardListeners = new ArrayList<>();
+    public final List<MouseDragListener> dragListeners = new ArrayList<>();
+    public final List<MouseScrollingListener> scrollingListeners = new ArrayList<>();
 
 
     protected double width;
@@ -73,10 +71,16 @@ public abstract class ScaledOverlay extends Overlay {
                 for (KeyboardListener listener : keyboardListeners) {
                     listener.onKey(this, key, code);
                 }
+
                 return true;
             }
+            doOnKey(key, code);
         }
         return false;
+    }
+
+    public void doOnKey(char key, int code) {
+
     }
 
     public boolean isDoScissor() {
@@ -94,19 +98,19 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public double getScaledX() {
-        return (isScalePosition() ? ((getX()) * getXFactor()) : x) + parent.getScaledX();
+        return (isScalePosition() ? getX() * getXFactor() : x) + parent.getScaledX();
     }
 
     public void setScaledX(double scaledX) {
-        x = (isScalePosition() ? ((scaledX - parent.getScaledX()) / getXFactor()) : scaledX - parent.getScaledX());
+        x = isScalePosition() ? (scaledX - parent.getScaledX()) / getXFactor() : scaledX - parent.getScaledX();
     }
 
     protected double getScaledY() {
-        return (isScalePosition() ? ((getY()) * getYFactor()) : y) + parent.getScaledY();
+        return (isScalePosition() ? getY() * getYFactor() : y) + parent.getScaledY();
     }
 
     public void setScaledY(double scaledY) {
-        y = (isScalePosition() ? ((scaledY - parent.getScaledY()) / getYFactor()) : scaledY - parent.getScaledY());
+        y = isScalePosition() ? (scaledY - parent.getScaledY()) / getYFactor() : scaledY - parent.getScaledY();
     }
 
     public double getXFactor() {
@@ -121,13 +125,13 @@ public abstract class ScaledOverlay extends Overlay {
         if (isScaleSize()) {
             switch (scaleMode) {
                 case NORMAL:
-                    return (width) * getXFactor();
+                    return width * getXFactor();
                 case DONT_SCALE_WIDTH:
                     return width;
                 case WIDTH_EQUAL_HEIGHT:
                     return getScaledHeight();
                 default:
-                    return (width) * getXFactor();
+                    return width * getXFactor();
             }
         } else {
             return width;
@@ -156,13 +160,13 @@ public abstract class ScaledOverlay extends Overlay {
         if (isScaleSize()) {
             switch (scaleMode) {
                 case NORMAL:
-                    return (height) * getYFactor();
+                    return height * getYFactor();
                 case DONT_SCALE_HEIGHT:
                     return height;
                 case HEIGHT_EQUAL_WIDTH:
                     return getScaledWidth();
                 default:
-                    return (height) * getYFactor();
+                    return height * getYFactor();
             }
         } else {
             return height;
@@ -266,11 +270,14 @@ public abstract class ScaledOverlay extends Overlay {
      */
     @Override
     public synchronized void draw(float partialTick, int mouseX, int mouseY) {
+        if (!ScissorHelper.isInScissorRect(getRenderRect())) {
+            return;
+        }
         GL11.glColor3d(1, 1, 1);
         glDisable(GL11.GL_CULL_FACE);
 
         final boolean flag = isDoScissor();
-        if (isPointInBounds(mouseX, mouseY)) {
+        if (isInMouseRect(mouseX, mouseY)) {
             for (MouseHoverListener listener : mouseHoverListeners) {
                 listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
             }
@@ -278,7 +285,7 @@ public abstract class ScaledOverlay extends Overlay {
         runTransformations();
         if (flag) {
             ScissorHelper.push();
-            ScissorHelper.relativeScissor((getScaledX() + xTranslation) / getScreenScaledWidth(), (getScaledY() + yTranslation) / getScreenScaledHeight(), (getScaledWidth()) / getScreenScaledWidth(), (getScaledHeight()) / getScreenScaledHeight());
+            ScissorHelper.relativeScissor(getScaledX() / getScreenScaledWidth(), getScaledY() / getScreenScaledHeight(), getScaledWidth() / getScreenScaledWidth(), getScaledHeight() / getScreenScaledHeight());
 
         }
 
@@ -309,14 +316,13 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     /**
-     * Вызывается если курсор внутри Mouse Rect
+     * Вызывается если курсор внутри {@link #getMouseRect()}
      *
      * @param lastMouseX предыдущая позиция курсора по X
      * @param lastMouseY предыдущая позиция курсора по Y
      * @param mouseX     текущая позиция курсора по X
      * @param mouseY     текущая позиция курсора по Y
      * @return остановить ли вызов этого метода у других элементов родителя
-     * @see #getMouseRect()
      */
     protected boolean doMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
         return false;
@@ -388,6 +394,9 @@ public abstract class ScaledOverlay extends Overlay {
 
     @Override
     public synchronized void drawText(float partialTick, int mouseX, int mouseY) {
+        if (!ScissorHelper.isInScissorRect(getRenderRect())) {
+            return;
+        }
         GL11.glColor4d(1, 1, 1, 1);
         glDisable(GL11.GL_CULL_FACE);
 
@@ -400,7 +409,7 @@ public abstract class ScaledOverlay extends Overlay {
         runTransformations();
         if (flag) {
             ScissorHelper.push();
-            ScissorHelper.relativeScissor((getScaledX() + xTranslation) / getScreenScaledWidth(), (getScaledY() + yTranslation) / getScreenScaledHeight(), (getScaledWidth()) / getScreenScaledWidth(), (getScaledHeight()) / getScreenScaledHeight());
+            ScissorHelper.relativeScissor(getScaledX() / getScreenScaledWidth(), getScaledY() / getScreenScaledHeight(), getScaledWidth() / getScreenScaledWidth(), getScaledHeight() / getScreenScaledHeight());
 
         }
 
@@ -474,6 +483,10 @@ public abstract class ScaledOverlay extends Overlay {
         return new Vector(getScaledWidth(), getScaledHeight());
     }
 
+    protected Rect getRenderRect() {
+        return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + getScaledHeight());
+    }
+
     public void toFront() {
         parent.moveToFront(this);
     }
@@ -483,6 +496,6 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public enum ScaleMode {
-        WIDTH_EQUAL_HEIGHT, HEIGHT_EQUAL_WIDTH, NORMAL, DONT_SCALE_WIDTH, DONT_SCALE_HEIGHT;
+        WIDTH_EQUAL_HEIGHT, HEIGHT_EQUAL_WIDTH, NORMAL, DONT_SCALE_WIDTH, DONT_SCALE_HEIGHT
     }
 }

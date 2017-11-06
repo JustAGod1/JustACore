@@ -7,5 +7,7 @@ import ru.justagod.justacore.gui.overlay.ScaledOverlay;
  */
 public interface Transformation {
 
-    void transform(ScaledOverlay scaledOverlay);
+    void preTransform(ScaledOverlay scaledOverlay);
+
+    void postTransform(ScaledOverlay scaledOverlay);
 }

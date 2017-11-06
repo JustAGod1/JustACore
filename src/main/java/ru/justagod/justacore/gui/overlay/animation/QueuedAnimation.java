@@ -4,20 +4,27 @@ package ru.justagod.justacore.gui.overlay.animation;
 import ru.justagod.justacore.gui.overlay.Overlay;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 
 /**
  * Created by JustAGod on 02.11.17.
  */
 public class QueuedAnimation<T extends Overlay> extends AbstractOverlayAnimator<T> {
 
-    private Queue<OverlayAnimator<T>> queue;
+    private List<OverlayAnimator<T>> queue;
+    private boolean cycled = false;
 
     private OverlayAnimator<T> current;
-    public QueuedAnimation(Queue<OverlayAnimator<T>> queue) {
+    private int pos = -1;
+
+    public QueuedAnimation(List<OverlayAnimator<T>> queue, boolean cycled) {
+        this.queue = queue;
+        this.cycled = cycled;
+    }
+
+    public QueuedAnimation(List<OverlayAnimator<T>> queue) {
         this.queue = queue;
         if (queue.size() == 0) setDead(true);
     }
@@ -32,13 +39,20 @@ public class QueuedAnimation<T extends Overlay> extends AbstractOverlayAnimator<
         if (current != null) {
             current.update(overlay);
 
-            if (current.isDead()) takeNext(overlay);
+            if (current.isDead())
+                takeNext(overlay);
         }
     }
 
     private void takeNext(T overlay) {
-        current = queue.poll();
-        if (current != null) {
+        pos = (pos + 1);
+        if (pos < queue.size()) {
+            current = queue.get(pos);
+            current.init(overlay);
+        } else if (cycled) {
+
+            pos = 0;
+            current = queue.get(pos);
             current.init(overlay);
         } else {
             setDead(true);
@@ -46,6 +60,7 @@ public class QueuedAnimation<T extends Overlay> extends AbstractOverlayAnimator<
     }
 
     public static class Builder<T extends ScaledOverlay> {
+        private boolean cycled;
         private List<OverlayAnimator<T>> animators = new LinkedList<OverlayAnimator<T>>();
 
         public Builder<T> append(OverlayAnimator<T> animator) {
@@ -63,8 +78,13 @@ public class QueuedAnimation<T extends Overlay> extends AbstractOverlayAnimator<
             return this;
         }
 
+        public Builder<T> setCycled() {
+            cycled = true;
+            return this;
+        }
+
         public QueuedAnimation<T> build() {
-            return new QueuedAnimation<T>(new ArrayBlockingQueue<OverlayAnimator<T>>(animators.size(), true, animators));
+            return new QueuedAnimation<T>(new ArrayList<OverlayAnimator<T>>(animators), cycled);
         }
     }
 }

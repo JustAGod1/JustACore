@@ -20,6 +20,7 @@ public class Main {
             case CLIENT:
                 new ClientProxy().init();
                 break;
+
         }
     }
 }

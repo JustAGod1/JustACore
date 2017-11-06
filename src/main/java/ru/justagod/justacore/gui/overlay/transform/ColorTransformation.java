@@ -53,7 +53,7 @@ public class ColorTransformation implements Transformation {
 
 
     @Override
-    public void transform(ScaledOverlay scaledOverlay) {
+    public void preTransform(ScaledOverlay scaledOverlay) {
         GL11.glColor4d(red, green, blue, alpha);
     }
 }

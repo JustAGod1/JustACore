@@ -29,7 +29,7 @@ public final class InGameOverlays extends AbstractOverlayParent {
     @SubscribeEvent
     public void onGui(RenderGameOverlayEvent e) {
         try {
-            if (e.type == RenderGameOverlayEvent.ElementType.HOTBAR) {
+            if (e.type == RenderGameOverlayEvent.ElementType.TEXT) {
                 for (Overlay overlay : overlays) {
                     overlay.draw(e.partialTicks, -1, -1);
                     overlay.drawText(e.partialTicks, -1, -1);

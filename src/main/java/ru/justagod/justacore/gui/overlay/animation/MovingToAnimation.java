@@ -27,6 +27,7 @@ public class MovingToAnimation<T extends ScaledOverlay> extends AbstractOverlayA
 
     @Override
     public void init(ScaledOverlay overlay) {
+        setDead(false);
         Vector old = overlay.getPos();
 
         Vector way = destination.subtract(old);
@@ -48,7 +49,7 @@ public class MovingToAnimation<T extends ScaledOverlay> extends AbstractOverlayA
         }
 
         Vector newPos = overlay.getPos().add(step.multiply(speed));
-        if (destination.subtract(newPos).length() < step.length()) {
+        if (destination.subtract(newPos).length() < step.multiply(speed).length()) {
             newPos = destination;
         }
         overlay.setX(newPos.getX());

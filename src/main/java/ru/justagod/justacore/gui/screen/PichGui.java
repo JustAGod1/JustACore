@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Created by JustAGod on 17.10.17.
  */
-public abstract class PichGui extends GuiScreen implements OverlayParent {
+public class PichGui extends GuiScreen implements OverlayParent {
 
     protected List<ScaledOverlay> overlays = new ArrayList<ScaledOverlay>();
 

@@ -14,7 +14,7 @@ import ru.justagod.justacore.helper.Vector;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.glDisable;
 import static ru.justagod.justacore.gui.overlay.ScaledOverlay.ScaleMode.NORMAL;
 
 /**
@@ -23,12 +23,20 @@ import static ru.justagod.justacore.gui.overlay.ScaledOverlay.ScaleMode.NORMAL;
 public abstract class ScaledOverlay extends Overlay {
 
     public static final int BOUND = 100;
+
+    public static int xTranslation;
+    public static double yTranslation;
+
+    // Listeners
     public final List<Transformation> transformations = new ArrayList<Transformation>();
+    public final List<MouseClickListener> mouseDoubleClickListeners = new ArrayList<MouseClickListener>();
     public final List<MouseClickListener> mouseClickListeners = new ArrayList<MouseClickListener>();
     public final List<MouseHoverListener> mouseHoverListeners = new ArrayList<MouseHoverListener>();
     public final List<KeyboardListener> keyboardListeners = new ArrayList<KeyboardListener>();
     public final List<MouseDragListener> dragListeners = new ArrayList<MouseDragListener>();
     public final List<MouseScrollingListener> scrollingListeners = new ArrayList<MouseScrollingListener>();
+
+
     protected double width;
     protected double height;
     protected boolean scalePosition = true;
@@ -38,6 +46,8 @@ public abstract class ScaledOverlay extends Overlay {
     protected ScaleMode scaleMode = NORMAL;
 
     protected OverlayParent parent;
+
+    private long lastClickTime;
 
     public ScaledOverlay(double x, double y) {
         super(x, y);
@@ -73,6 +83,12 @@ public abstract class ScaledOverlay extends Overlay {
         return doScissor;
     }
 
+
+    /**
+     * Использовать очень аккуратно! Сильно замедляет отрисовку.
+     *
+     * @param doScissor использовать ли glScissor
+     */
     public void setDoScissor(boolean doScissor) {
         this.doScissor = doScissor;
     }
@@ -118,12 +134,24 @@ public abstract class ScaledOverlay extends Overlay {
         }
     }
 
+    /**
+     * Необходимо переопределить
+     * @return
+     */
     public Rect getMouseRect() {
 
 
         return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + getScaledHeight());
     }
 
+
+    /**
+     * Расчитывает высоту элемента согласно всем настройкам
+     *
+     * @return абсолютная высота элемента
+     * @see #setScaleMode(ScaleMode)
+     * @see #setScaleSize(boolean)
+     */
     public double getScaledHeight() {
         if (isScaleSize()) {
             switch (scaleMode) {
@@ -161,6 +189,12 @@ public abstract class ScaledOverlay extends Overlay {
         return scalePosition;
     }
 
+
+    /**
+     * Использовать относительную или абсолютную позицию
+     *
+     * @param scalePosition true/false
+     */
     public void setScalePosition(boolean scalePosition) {
         this.scalePosition = scalePosition;
     }
@@ -191,31 +225,51 @@ public abstract class ScaledOverlay extends Overlay {
 
     protected void runTransformations() {
         for (Transformation transformation : transformations) {
-            transformation.transform(this);
+            transformation.preTransform(this);
         }
     }
 
+    /**
+     * @param mouseX       абсолютная позиция курсора по X
+     * @param mouseY       абсолютная позиция курсора по Y
+     * @param scrollAmount равно Mouse.getDWheel()
+     * @return остановить ли вызов этого метода у других элементов родителя
+     */
     public boolean onMouseScroll(double mouseX, double mouseY, int scrollAmount) {
 
         if (getMouseRect().isVectorInBounds(new Vector(mouseX, mouseY))) {
             for (MouseScrollingListener listener : scrollingListeners) {
                 listener.onMouseScroll(scrollAmount, mouseX, mouseY, this);
             }
-            return doMouseScroll(mouseX / getXFactor(), mouseY / getYFactor(), scrollAmount) || scrollingListeners.size() > 0;
+            return doMouseScroll((mouseX - getScaledX()) / getXFactor(), (mouseY - getScaledY()) / getYFactor(), scrollAmount) || scrollingListeners.size() > 0;
         }
         return false;
     }
 
+    /**
+     * @param relativeMouseX относительная позиция курсора по X относительно родителя
+     * @param relativeMouseY относительная позиция курсора по Y относительно родителя
+     * @param scrollAmount   равно Mouse.getDWheel()
+     * @return остановить ли вызов этого метода у других элементов родителя
+     * @see OverlayParent
+     * @see #getMouseRect()
+     * @see #parent
+     */
     protected boolean doMouseScroll(double relativeMouseX, double relativeMouseY, int scrollAmount) {
         return false;
     }
 
+    /**
+     * @param partialTick время которое прошло от предыдущего тика деленое на 20
+     * @param mouseX      абсолютная позиция курсора по X
+     * @param mouseY      абсолютная позиция курсора по Y
+     */
     @Override
     public synchronized void draw(float partialTick, int mouseX, int mouseY) {
         GL11.glColor3d(1, 1, 1);
         glDisable(GL11.GL_CULL_FACE);
 
-        boolean flag = isDoScissor();
+        final boolean flag = isDoScissor();
         if (isPointInBounds(mouseX, mouseY)) {
             for (MouseHoverListener listener : mouseHoverListeners) {
                 listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
@@ -224,7 +278,7 @@ public abstract class ScaledOverlay extends Overlay {
         runTransformations();
         if (flag) {
             ScissorHelper.push();
-            ScissorHelper.relativeScissor(getScaledX() / getScreenScaledWidth(), getScaledY() / getScreenScaledHeight(), getScaledWidth() / getScreenScaledWidth(), getScaledHeight() / getScreenScaledHeight());
+            ScissorHelper.relativeScissor((getScaledX() + xTranslation) / getScreenScaledWidth(), (getScaledY() + yTranslation) / getScreenScaledHeight(), (getScaledWidth()) / getScreenScaledWidth(), (getScaledHeight()) / getScreenScaledHeight());
 
         }
 
@@ -236,16 +290,34 @@ public abstract class ScaledOverlay extends Overlay {
         }
     }
 
+    /**
+     * @param lastMouseX предыдущая позиция курсора по X
+     * @param lastMouseY предыдущая позиция курсора по Y
+     * @param mouseX     текущая позиция курсора по X
+     * @param mouseY     текущая позиция курсора по Y
+     * @return остановить ли вызов этого метода у других элементов родителя
+     * @see #getMouseRect()
+     */
     public boolean onMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
         if (isInMouseRect(lastMouseX, lastMouseY)) {
             for (MouseDragListener listener : dragListeners) {
                 listener.onDrag(this, new Vector(lastMouseX, lastMouseY), new Vector(mouseX, mouseY));
             }
-            return doMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY);
+            return doMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY) || dragListeners.size() > 0;
         }
         return false;
     }
 
+    /**
+     * Вызывается если курсор внутри Mouse Rect
+     *
+     * @param lastMouseX предыдущая позиция курсора по X
+     * @param lastMouseY предыдущая позиция курсора по Y
+     * @param mouseX     текущая позиция курсора по X
+     * @param mouseY     текущая позиция курсора по Y
+     * @return остановить ли вызов этого метода у других элементов родителя
+     * @see #getMouseRect()
+     */
     protected boolean doMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
         return false;
     }
@@ -266,13 +338,30 @@ public abstract class ScaledOverlay extends Overlay {
         return new ScaledResolution(Minecraft.getMinecraft(), Minecraft.getMinecraft().displayWidth, Minecraft.getMinecraft().displayHeight);
     }
 
-    public boolean onClick(int x, int y) {
-        if (isPointInBounds(x, y)) {
+    /**
+     * Вызывается родителем при нажатии ПКМ, ЛКМ или колесика
+     *
+     * @param mouseX абсолютна позиция курсора по X
+     * @param mouseY абсолютная позиция курсора по Y
+     * @return остановить ли вызов этого метода у других элементов родителя
+     */
+    public boolean onClick(int mouseX, int mouseY) {
+        if (isPointInBounds(mouseX, mouseY)) {
             for (MouseClickListener listener : mouseClickListeners) {
-                listener.onClick(x - getScaledX(), y - getScaledY(), this);
+                listener.onClick(mouseX - getScaledX(), mouseY - getScaledY(), this);
 
             }
-            doClick(x, y);
+            if (System.currentTimeMillis() - lastClickTime <= 200) {
+                for (MouseClickListener listener : mouseDoubleClickListeners) {
+                    listener.onClick(mouseX - getScaledX(), mouseY - getScaledY(), this);
+
+                }
+                lastClickTime = 0;
+                doDoubleClick(mouseX, mouseY);
+            } else {
+                doClick(mouseX, mouseY);
+                lastClickTime = System.currentTimeMillis();
+            }
             isFocused = true;
             return true;
         }
@@ -280,18 +369,29 @@ public abstract class ScaledOverlay extends Overlay {
         return false;
     }
 
-    protected boolean doClick(int x, int y) {
+
+    /**
+     * Вызывается при нажатии если в облости нажатия
+     *
+     * @param mouseX абсолютна позиция курсора по X
+     * @param mouseY абсолютная позиция курсора по Y
+     * @return остановить ли вызов этого метода у других элементов родителя
+     * @see #getMouseRect()
+     */
+    protected boolean doClick(int mouseX, int mouseY) {
         return false;
     }
 
-
+    protected boolean doDoubleClick(int mouseX, int mouseY) {
+        return false;
+    }
 
     @Override
     public synchronized void drawText(float partialTick, int mouseX, int mouseY) {
-        GL11.glColor3d(1, 1, 1);
+        GL11.glColor4d(1, 1, 1, 1);
         glDisable(GL11.GL_CULL_FACE);
 
-        boolean flag = isDoScissor();
+        final boolean flag = isDoScissor();
         if (isPointInBounds(mouseX, mouseY)) {
             for (MouseHoverListener listener : mouseHoverListeners) {
                 listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
@@ -300,7 +400,7 @@ public abstract class ScaledOverlay extends Overlay {
         runTransformations();
         if (flag) {
             ScissorHelper.push();
-            ScissorHelper.relativeScissor(getScaledX() / getScreenScaledWidth(), getScaledY() / getScreenScaledHeight(), getScaledWidth() / getScreenScaledWidth(), getScaledHeight() / getScreenScaledHeight());
+            ScissorHelper.relativeScissor((getScaledX() + xTranslation) / getScreenScaledWidth(), (getScaledY() + yTranslation) / getScreenScaledHeight(), (getScaledWidth()) / getScreenScaledWidth(), (getScaledHeight()) / getScreenScaledHeight());
 
         }
 
@@ -365,10 +465,14 @@ public abstract class ScaledOverlay extends Overlay {
         return new Vector(getScaledX(), getScaledY());
     }
 
+    public void setScaledPos(Vector scaledPos) {
+        setScaledX(scaledPos.getX());
+        setScaledY(scaledPos.getY());
+    }
+
     public Vector getDimensions() {
         return new Vector(getScaledWidth(), getScaledHeight());
     }
-
 
     public void toFront() {
         parent.moveToFront(this);
@@ -376,11 +480,6 @@ public abstract class ScaledOverlay extends Overlay {
 
     public void toBackground() {
         parent.moveToBackground(this);
-    }
-
-    public void setScaledPos(Vector scaledPos) {
-        setScaledX(scaledPos.getX());
-        setScaledY(scaledPos.getY());
     }
 
     public enum ScaleMode {

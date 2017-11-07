@@ -3,7 +3,6 @@ package ru.justagod.justacore.gui.overlay;
 import javafx.util.Callback;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
-import ru.justagod.justacore.gui.listener.MouseClickListener;
 import ru.justagod.justacore.gui.parent.PanelOverlay;
 
 import java.io.File;
@@ -19,8 +18,8 @@ public class FilesScrollingListOverlay extends PanelOverlay {
     private final FileFilter filter;
     private List<File> entries;
 
-    private List<List<File>> pages = new LinkedList<List<File>>();
-    private List<List<FileEntry>> pagesEntries = new LinkedList<List<FileEntry>>();
+    private List<List<File>> pages = new LinkedList<>();
+    private List<List<FileEntry>> pagesEntries = new LinkedList<>();
     private FileEntry currentEntry;
     private int pagesCount = 0;
     private int page = 0;
@@ -36,20 +35,20 @@ public class FilesScrollingListOverlay extends PanelOverlay {
         this.filter = filter;
 
 
-        parent.addOverlay(prev = new ButtonOverlay(29, 75, 13, 6, I18n.format("choose.previous"), new Runnable() {
+        parent.addOverlay(prev = new ButtonOverlay(29, 75, 13, I18n.format("choose.previous"), new Runnable() {
             @Override
             public void run() {
                 if (page > 0) setPage(page - 1);
 
             }
         }));
-        parent.addOverlay(accept = new ButtonOverlay(57, 75, 13, 6, I18n.format("choose.next"), new Runnable() {
+        parent.addOverlay(accept = new ButtonOverlay(57, 75, 13, I18n.format("choose.next"), new Runnable() {
             @Override
             public void run() {
                 if (page < pagesCount - 1) setPage(page + 1);
             }
         }));
-        parent.addOverlay(next = new ButtonOverlay(43, 75, 13, 6, I18n.format("choose.accept"), new Runnable() {
+        parent.addOverlay(next = new ButtonOverlay(43, 75, 13, I18n.format("choose.accept"), new Runnable() {
             @Override
             public void run() {
                 if (currentEntry != null) {
@@ -65,10 +64,9 @@ public class FilesScrollingListOverlay extends PanelOverlay {
 
     private void createEntries() {
 
-        int id = 666666;
         for (List<File> files : pages) {
             int y = 10;
-            List<FileEntry> entries = new LinkedList<FileEntry>();
+            List<FileEntry> entries = new LinkedList<>();
             for (File file : files) {
                 FileEntry entry = new FileEntry(24, y, 52, 5, file);
                 entries.add(entry);
@@ -85,7 +83,7 @@ public class FilesScrollingListOverlay extends PanelOverlay {
         for (int i = 0; i < entries.size(); i++) {
             int page = i / entriesForPage;
 
-            if (pages.size() <= page) pages.add(new LinkedList<File>());
+            if (pages.size() <= page) pages.add(new LinkedList<>());
             List<File> pageList = pages.get(page);
 
             pageList.add(entries.get(i));
@@ -93,7 +91,7 @@ public class FilesScrollingListOverlay extends PanelOverlay {
         }
 
         if (pages.size() == 0) {
-            pages.add(new LinkedList<File>());
+            pages.add(new LinkedList<>());
         }
         pagesCount = pages.size();
 
@@ -117,7 +115,7 @@ public class FilesScrollingListOverlay extends PanelOverlay {
         }
 
         if (currentEntry != null) {
-            currentEntry.setText((filter.accept(currentEntry.file)?"§6":"§3") + currentEntry.file.getName());
+            currentEntry.setText((filter.accept(currentEntry.file) ? "§6" : "§3") + currentEntry.file.getName());
         }
     }
 
@@ -140,27 +138,23 @@ public class FilesScrollingListOverlay extends PanelOverlay {
         private File file;
 
         public FileEntry(int x, int y, int width, int height, final File file) {
-            super(x, y, width, height, new ResourceLocation("pich", "textures/gui/send_gui_bg.png"), (filter.accept(file)?"§6":"§3") + file.getName(), null);
+            super(x, y, width, height, (filter.accept(file) ? "§6" : "§3") + file.getName(), null, new ResourceLocation("pich", "textures/gui/send_gui_bg.png"));
             this.file = file;
 
-            mouseClickListeners.add(new MouseClickListener() {
-                @Override
-                public void onClick(double x, double y, ScaledOverlay overlay) {
-                    if (currentEntry != null) {
-                        currentEntry.setText((filter.accept(currentEntry.file)?"§6":"§3") + currentEntry.file.getName());
-                    }
-                    if (filter.accept(file)) {
-                        currentEntry = FileEntry.this;
-                        setText("§4" + file.getName());
-                    }
-                }
-            });
+
         }
 
-
-
-
-
+        @Override
+        protected boolean doClick(int x, int y) {
+            if (currentEntry != null) {
+                currentEntry.setText((filter.accept(currentEntry.file) ? "§6" : "§3") + currentEntry.file.getName());
+            }
+            if (filter.accept(file)) {
+                currentEntry = FileEntry.this;
+                setText("§4" + file.getName());
+            }
+            return true;
+        }
 
         public File getFile() {
             return file;

@@ -2,6 +2,7 @@ package ru.justagod.justacore.gui.overlay;
 
 
 import org.lwjgl.opengl.GL11;
+import ru.justagod.justacore.gui.model.Color;
 import ru.justagod.justacore.gui.parent.AbstractPanelOverlay;
 import ru.justagod.justacore.gui.model.Dimensions;
 import ru.justagod.justacore.gui.helper.DrawHelper;
@@ -18,30 +19,34 @@ public class VerticalScrollingOverlay extends AbstractPanelOverlay {
     public static final int CARRIAGE_WIDTH = 10;
 
     private Dimensions innerDimensions;
+    private Color background;
     private double position;
 
 
-    public VerticalScrollingOverlay(double x, double y, Dimensions innerDimensions) {
+    public VerticalScrollingOverlay(double x, double y, Dimensions innerDimensions, Color background) {
         super(x, y);
         this.innerDimensions = innerDimensions;
+        this.background = background;
     }
 
-    public VerticalScrollingOverlay(double x, double y, double width, double height, Dimensions innerDimensions) {
+    public VerticalScrollingOverlay(double x, double y, double width, double height, Dimensions innerDimensions, Color background) {
         super(x, y, width, height);
         this.innerDimensions = innerDimensions;
+        this.background = background;
         setDoScissor(true);
     }
 
-    public VerticalScrollingOverlay(double x, double y, double width, double height, boolean scalePosition, boolean scaleSize, Dimensions innerDimensions) {
+    public VerticalScrollingOverlay(double x, double y, double width, double height, boolean scalePosition, boolean scaleSize, Dimensions innerDimensions, Color background) {
         super(x, y, width, height, scalePosition, scaleSize);
         this.innerDimensions = innerDimensions;
+        this.background = background;
     }
 
     @Override
     protected synchronized void doDraw(double xPos, double yPos, double width, double height, float partialTick, int mouseX, int mouseY, boolean mouseInBounds) {
         DrawHelper.enableAlpha();
         GL11.glBindTexture(GL11.GL_TEXTURE_2D, -1);
-        glColor4d(1, 0.1, 0.1, 0.3);
+        DrawHelper.bindColor(background);
         t.setTranslation(0, 0, 0);
         t.startDrawingQuads();
         t.addVertex(xPos, yPos, 0);
@@ -94,16 +99,7 @@ public class VerticalScrollingOverlay extends AbstractPanelOverlay {
 
     @Override
     protected synchronized void doDrawText(double xPos, double yPos, double width, double height, float partialTick, int mouseX, int mouseY, boolean mouseInBounds) {
-        DrawHelper.enableAlpha();
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, -1);
-        glColor4d(1, 0.1, 0.1, 0.3);
-        t.setTranslation(0, 0, 0);
-        t.startDrawingQuads();
-        t.addVertex(xPos, yPos, 0);
-        t.addVertex(xPos + width, yPos, 0);
-        t.addVertex(xPos + width, yPos + height, 0);
-        t.addVertex(xPos, yPos + height, 0);
-        t.draw();
+
         GL11.glTranslated(0, getTranslationValue(), 0);
         DrawHelper.disableAlpha();
 
@@ -124,7 +120,7 @@ public class VerticalScrollingOverlay extends AbstractPanelOverlay {
     private boolean moveCarriage(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
         double carriageHeight = getCarriageHeight();
         double carriageX = getScaledX() + getScaledWidth() - CARRIAGE_WIDTH - 1;
-        double carriageY = getScaledY() + MathHelper.clampDouble((getScaledY() - carriageHeight) * getCarriagePos() / (100 - getScaledHeight() / innerDimensions.getHeight() * 100), 0, getScaledHeight() - carriageHeight);
+        double carriageY = getScaledY() + MathHelper.clampDouble((getScaledHeight() - height) * getCarriagePos() / (100 - getScaledHeight() / innerDimensions.getHeight() * 100), 0, getScaledHeight() - height);
 
         if (lastMouseX <= carriageX + CARRIAGE_WIDTH && lastMouseX >= carriageX && lastMouseY <= carriageY + carriageHeight && lastMouseY >= carriageY) {
             position = (mouseY - getScaledY() - carriageHeight / 2) * (100 - getScaledHeight() / innerDimensions.getHeight() * 100) / (getScaledY() - carriageHeight);
@@ -184,5 +180,21 @@ public class VerticalScrollingOverlay extends AbstractPanelOverlay {
 
     public double getCarriagePos() {
         return position;
+    }
+
+    public Dimensions getInnerDimensions() {
+        return innerDimensions;
+    }
+
+    public void setInnerDimensions(Dimensions innerDimensions) {
+        this.innerDimensions = innerDimensions;
+    }
+
+    @Override
+    public String toString() {
+        return "VerticalScrollingOverlay{" +
+                "innerDimensions=" + innerDimensions +
+                ", position=" + position +
+                "} " + super.toString();
     }
 }

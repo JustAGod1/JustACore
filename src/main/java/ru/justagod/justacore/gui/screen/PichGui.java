@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Mouse;
+import ru.justagod.justacore.gui.helper.DrawHelper;
 import ru.justagod.justacore.gui.overlay.CenteredTextOverlay;
 import ru.justagod.justacore.gui.overlay.Overlay;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
@@ -32,11 +33,12 @@ public class PichGui extends GuiScreen implements OverlayParent {
 
     public PichGui(boolean pauseGame) {
         this.pauseGame = pauseGame;
+        DrawHelper.bindCursor(DrawHelper.CursorType.NORMAL);
     }
 
     public PichGui() {
         addOverlay(new CenteredTextOverlay(50, 50, "Пустой Pich GUI"));
-
+        DrawHelper.bindCursor(DrawHelper.CursorType.NORMAL);
     }
 
     public static void openPichGui(PichGui gui) {

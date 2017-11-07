@@ -4,12 +4,14 @@ package ru.justagod.justacore.gui.overlay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
+import ru.justagod.justacore.gui.helper.DrawHelper;
+import ru.justagod.justacore.gui.helper.DrawHelper.CursorType;
+import ru.justagod.justacore.gui.helper.ScissorHelper;
 import ru.justagod.justacore.gui.listener.*;
+import ru.justagod.justacore.gui.model.Rect;
+import ru.justagod.justacore.gui.model.Vector;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 import ru.justagod.justacore.gui.transform.Transformation;
-import ru.justagod.justacore.gui.model.Rect;
-import ru.justagod.justacore.gui.helper.ScissorHelper;
-import ru.justagod.justacore.gui.model.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,7 +43,9 @@ public abstract class ScaledOverlay extends Overlay {
     protected boolean scaleSize = true;
     protected boolean doScissor = false;
     protected boolean isFocused;
+    protected boolean isMouseInside;
     protected ScaleMode scaleMode = NORMAL;
+    protected CursorType cursor = CursorType.NORMAL;
 
     protected OverlayParent parent;
 
@@ -141,7 +145,7 @@ public abstract class ScaledOverlay extends Overlay {
     /**
      * Необходимо переопределить
      *
-     * @return
+     * @return область в которой считается что мышка внутри
      */
     public Rect getMouseRect() {
 
@@ -278,10 +282,15 @@ public abstract class ScaledOverlay extends Overlay {
         glDisable(GL11.GL_CULL_FACE);
 
         final boolean flag = isDoScissor();
-        if (isInMouseRect(mouseX, mouseY)) {
+        if (isMouseInside = isInMouseRect(mouseX, mouseY)) {
             for (MouseHoverListener listener : mouseHoverListeners) {
                 listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
             }
+            CursorType cursor = getCursorType(mouseX, mouseY);
+            if (cursor != CursorType.NONE) {
+                DrawHelper.bindCursor(cursor);
+            }
+
         }
         runTransformations();
         if (flag) {
@@ -402,9 +411,13 @@ public abstract class ScaledOverlay extends Overlay {
         glDisable(GL11.GL_CULL_FACE);
 
         final boolean flag = isDoScissor();
-        if (isPointInBounds(mouseX, mouseY)) {
+        if (isMouseInside = isPointInBounds(mouseX, mouseY)) {
             for (MouseHoverListener listener : mouseHoverListeners) {
                 listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
+            }
+            CursorType cursor = getCursorType(mouseX, mouseY);
+            if (cursor != CursorType.NONE) {
+                DrawHelper.bindCursor(cursor);
             }
         }
         runTransformations();
@@ -480,12 +493,24 @@ public abstract class ScaledOverlay extends Overlay {
         setScaledY(scaledPos.getY());
     }
 
+    protected CursorType getCursorType(int mouseX, int mouseY) {
+        return cursor;
+    }
+
     public Vector getDimensions() {
         return new Vector(getScaledWidth(), getScaledHeight());
     }
 
     protected Rect getRenderRect() {
         return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + getScaledHeight());
+    }
+
+    public CursorType getCursor() {
+        return cursor;
+    }
+
+    public void setCursor(CursorType cursor) {
+        this.cursor = cursor;
     }
 
     public void toFront() {
@@ -498,5 +523,9 @@ public abstract class ScaledOverlay extends Overlay {
 
     public enum ScaleMode {
         WIDTH_EQUAL_HEIGHT, HEIGHT_EQUAL_WIDTH, NORMAL, DONT_SCALE_WIDTH, DONT_SCALE_HEIGHT
+    }
+
+    public boolean isMouseInside() {
+        return isMouseInside;
     }
 }

@@ -49,6 +49,8 @@ class Scissor {
             return this;
         } else if (hMaxY >= mMaxY && scissor.y <= y && scissor.x >= x && scissor.x <= mMaxX) {
             return new Scissor(scissor.x, y, mMaxX - scissor.x, mMaxY - y);
+        } else if (hMaxY <= mMaxY && scissor.y >= y && scissor.x <= x && hMaxX >= mMaxX) {
+            return new Scissor(x, scissor.y, mMaxX - x, hMaxY - scissor.y);
         } else if (hMaxY >= mMaxY && scissor.y <= y && scissor.x <= x && scissor.x <= mMaxX) {
             return new Scissor(x, y, hMaxX - x, mMaxY - scissor.y);
         } else if (hMaxY >= mMaxY && scissor.y <= mMaxY && scissor.x >= x && scissor.x <= mMaxX) {

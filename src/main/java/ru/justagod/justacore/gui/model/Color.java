@@ -51,4 +51,14 @@ public class Color {
     public void setAlpha(double alpha) {
         this.alpha = alpha;
     }
+
+    @Override
+    public String toString() {
+        return "Color{" +
+                "red=" + red +
+                ", green=" + green +
+                ", blue=" + blue +
+                ", alpha=" + alpha +
+                '}';
+    }
 }

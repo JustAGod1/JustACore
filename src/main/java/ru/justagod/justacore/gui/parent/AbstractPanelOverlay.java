@@ -186,4 +186,8 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
         }
     }
 
+    @Override
+    public String toString() {
+        return "AbstractPanelOverlay{} " + super.toString();
+    }
 }

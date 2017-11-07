@@ -3,7 +3,7 @@ package ru.justagod.justacore.gui.overlay;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.MathHelper;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.justacore.gui.helper.TextureHelper;
+import ru.justagod.justacore.gui.helper.DrawHelper;
 
 import java.awt.image.BufferedImage;
 
@@ -27,7 +27,7 @@ public class BufferedImageOverlay extends ScaledOverlay {
 
     private void bindImage() {
         if (textureId == -1) {
-            textureId = TextureHelper.loadTexture(image);
+            textureId = DrawHelper.loadTexture(image);
         }
         GL11.glBindTexture(GL_TEXTURE_2D, textureId);
     }

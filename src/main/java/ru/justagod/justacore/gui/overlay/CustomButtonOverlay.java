@@ -9,25 +9,34 @@ import org.lwjgl.opengl.GL11;
 /**
  * Created by JustAGod on 17.10.17.
  */
-public class CustomButtonOverlay extends ScaledOverlay {
+public class CustomButtonOverlay extends AbstractButtonOverlay {
 
     private ResourceLocation texture;
-    private String text;
-    private Runnable onClick;
 
 
-    public CustomButtonOverlay(double x, double y, ResourceLocation texture, String text, final Runnable onClick) {
-        this(x, y, 20, 2, texture, text, onClick);
-        setDoScissor(true);
+    public CustomButtonOverlay(double x, double y, String text, Runnable onClick, ResourceLocation sound, ResourceLocation texture) {
+        super(x, y, text, onClick, sound);
+        this.texture = texture;
     }
 
-    public CustomButtonOverlay(double x, double y, double width, double height, ResourceLocation texture, String text, final Runnable onClick) {
-        super(x, y, width, height);
+    public CustomButtonOverlay(double x, double y, double width, double height, String text, Runnable onClick, ResourceLocation sound, ResourceLocation texture) {
+        super(x, y, width, height, text, onClick, sound);
         this.texture = texture;
-        this.text = text;
-        this.onClick = onClick;
-        setDoScissor(true);
+    }
 
+    public CustomButtonOverlay(double x, double y, double width, double height, boolean scalePosition, boolean scaleSize, String text, Runnable onClick, ResourceLocation sound, ResourceLocation texture) {
+        super(x, y, width, height, scalePosition, scaleSize, text, onClick, sound);
+        this.texture = texture;
+    }
+
+    public CustomButtonOverlay(double x, double y, String text, Runnable onClick, ResourceLocation texture) {
+        super(x, y, text, onClick);
+        this.texture = texture;
+    }
+
+    public CustomButtonOverlay(double x, double y, double width, double height, String text, Runnable onClick, ResourceLocation texture) {
+        super(x, y, width, height, text, onClick);
+        this.texture = texture;
     }
 
     public CustomButtonOverlay localize() {
@@ -78,11 +87,5 @@ public class CustomButtonOverlay extends ScaledOverlay {
         this.texture = texture;
     }
 
-    public Runnable getOnClick() {
-        return onClick;
-    }
 
-    public void setOnClick(Runnable onClick) {
-        this.onClick = onClick;
-    }
 }

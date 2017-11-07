@@ -5,6 +5,8 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.ChatAllowedCharacters;
 import net.minecraft.util.MathHelper;
 import org.lwjgl.opengl.GL11;
+import ru.justagod.justacore.gui.helper.DrawHelper;
+import ru.justagod.justacore.gui.model.Rect;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +33,8 @@ public class TextInputOverlay extends ScaledOverlay  {
     public TextInputOverlay(double x, double y) {
         super(x, y);
         isEnabled = true;
-        setDoScissor(true);
+        setCursor(DrawHelper.CursorType.TEXT);
+
     }
 
     public TextInputOverlay(double x, double y, double width, double height) {
@@ -98,7 +101,7 @@ public class TextInputOverlay extends ScaledOverlay  {
                     }
             }
         });
-        setDoScissor(true);
+        setCursor(DrawHelper.CursorType.TEXT);
     }
 
     public boolean isEnabled() {
@@ -219,5 +222,15 @@ public class TextInputOverlay extends ScaledOverlay  {
             }
         }
         pop();
+    }
+
+    @Override
+    protected Rect getRenderRect() {
+        return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + 10);
+    }
+
+    @Override
+    public Rect getMouseRect() {
+        return getRenderRect();
     }
 }

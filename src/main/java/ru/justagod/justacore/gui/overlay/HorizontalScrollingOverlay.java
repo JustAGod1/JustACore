@@ -107,15 +107,8 @@ public class HorizontalScrollingOverlay extends AbstractPanelOverlay {
 
     @Override
     protected synchronized void doDrawText(double xPos, double yPos, double width, double height, float partialTick, int mouseX, int mouseY, boolean mouseInBounds) {
-        GL11.glBindTexture(GL11.GL_TEXTURE_2D, -1);
-        DrawHelper.bindColor(background);
-        t.setTranslation(0, 0, 0);
-        t.startDrawingQuads();
-        t.addVertex(xPos, yPos, 0);
-        t.addVertex(xPos + width, yPos, 0);
-        t.addVertex(xPos + width, yPos + height, 0);
-        t.addVertex(xPos, yPos + height, 0);
-        t.draw();
+
+
         GL11.glTranslated(getTranslationValue(), 0, 0);
         DrawHelper.disableAlpha();
 
@@ -128,7 +121,7 @@ public class HorizontalScrollingOverlay extends AbstractPanelOverlay {
 
     public double getTranslationValue() {
         double translation = dimensions.getHeight() * position / 100;
-        translation = MathHelper.clampDouble(translation, 0, dimensions.getHeight() - getScaledHeight());
+        translation = MathHelper.clampDouble(translation, 0, dimensions.getWidth() - getScaledWidth());
         return -translation;
     }
 
@@ -174,7 +167,7 @@ public class HorizontalScrollingOverlay extends AbstractPanelOverlay {
 
     @Override
     protected synchronized boolean doMouseScroll(double mouseX, double mouseY, int scrollAmount) {
-        if (super.doMouseScroll(mouseX, mouseY - getTranslationValue(), scrollAmount)) return true;
+        if (super.doMouseScroll(mouseX - getTranslationValue(), mouseY, scrollAmount)) return true;
         position += calculateScrollMotion(-scrollAmount);
         position = MathHelper.clampDouble(position, 0, 100);
         return true;
@@ -196,5 +189,14 @@ public class HorizontalScrollingOverlay extends AbstractPanelOverlay {
 
     public double getCarriagePos() {
         return position;
+    }
+
+    @Override
+    public String toString() {
+        return "HorizontalScrollingOverlay{" +
+                "dimensions=" + dimensions +
+                ", background=" + background +
+                ", position=" + position +
+                "} " + super.toString();
     }
 }

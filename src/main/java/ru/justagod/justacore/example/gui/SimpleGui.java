@@ -5,6 +5,7 @@ import ru.justagod.justacore.gui.model.Color;
 import ru.justagod.justacore.gui.overlay.*;
 import ru.justagod.justacore.gui.animation.MovingToAnimation;
 import ru.justagod.justacore.gui.animation.QueuedAnimation;
+import ru.justagod.justacore.gui.parent.AbstractPanelOverlay;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 import ru.justagod.justacore.gui.screen.PichGui;
 import ru.justagod.justacore.gui.model.Dimensions;
@@ -22,7 +23,10 @@ public class SimpleGui extends PichGui {
         setPauseGame(false);
         clear();
 
-        scrollingExample();
+        addOverlay(new ButtonOverlay(40, 40, 20, "Тык", ()->{
+            clear();
+            scrollingExample();
+        }));
 
     }
 
@@ -35,7 +39,7 @@ public class SimpleGui extends PichGui {
 
 
 
-        final HorizontalScrollingOverlay scrollingOverlay = new HorizontalScrollingOverlay(2, 50, 96, 48, new Dimensions(2000, 2000), new Color(1, 0, 0, 0.2));
+        final HorizontalScrollingOverlay scrollingOverlay = new HorizontalScrollingOverlay(2, 50, 96, 48, new Dimensions(2000, 2000), new Color(0.2, 0.2, 0.2, 0.2));
         //scrollingOverlay.setScaleMode(ScaledOverlay.ScaleMode.HEIGHT_EQUAL_WIDTH);
         addOverlay(scrollingOverlay);
 
@@ -44,17 +48,23 @@ public class SimpleGui extends PichGui {
 
         o.addAnimator(new QueuedAnimation.Builder().append(new MovingToAnimation(40, 90, 0)).append(new MovingToAnimation(40, 10, 0)).setCycled().build());
 
-        ColorButtonOverlay button = new ColorButtonOverlay(2, 5, 20, 20, "Добавить", () -> generateNew(scrollingOverlay), 1, 0.5, 0.5, 1);
+
+        scrollingOverlay.addOverlay(new TextInputOverlay(50, 60, 10, 2));
+        AbstractPanelOverlay parent = new VerticalScrollingOverlay(2, 2, 96, 48, new Dimensions(2000, 2000), new Color(0.2, 0.2, 0.2, 1));
+        scrollingOverlay.addOverlay(parent);
+
+        ColorButtonOverlay button = new ColorButtonOverlay(2, 30, 20, 20, "Добавить", () -> {
+            generateNew(scrollingOverlay);
+            parent.toFront();
+
+        }, 1, 0.5, 0.5, 1);
         scrollingOverlay.addOverlay(button);
         button.setScaleMode(ScaledOverlay.ScaleMode.DONT_SCALE_HEIGHT);
-        /*scrollingOverlay.addOverlay(new TextInputOverlay(50, 50, 10, 2));
-        scrollingOverlay.addOverlay(new VerticalScrollingOverlay(2, 2, 96, 48, new Dimensions(2000, 2000)));
-
 
 
         for (int i = 0; i < 500; i++) {
-            generateNew(scrollingOverlay);
-        }*/
+            generateNew(parent);
+        }
     }
 
     private void generateNew(OverlayParent parent) {

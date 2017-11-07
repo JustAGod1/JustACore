@@ -1,4 +1,6 @@
-package ru.justagod.justacore.helper;
+package ru.justagod.justacore.gui.helper;
+
+import ru.justagod.justacore.gui.model.Rect;
 
 /**
  * Created by JustAGod on 05.11.17.
@@ -45,6 +47,10 @@ class Scissor {
             return scissor;
         } else if (hMaxX >= mMaxX && scissor.x <= x && hMaxY >= mMaxY && scissor.y >= y) {
             return this;
+        } else if (hMaxY >= mMaxY && scissor.y <= y && scissor.x >= x && scissor.x <= mMaxX) {
+            return new Scissor(scissor.x, y, mMaxX - scissor.x, mMaxY - y);
+        } else if (hMaxY >= mMaxY && scissor.y <= y && scissor.x <= x && scissor.x <= mMaxX) {
+            return new Scissor(x, y, hMaxX - x, mMaxY - scissor.y);
         } else if (hMaxY >= mMaxY && scissor.y <= mMaxY && scissor.x >= x && scissor.x <= mMaxX) {
             return new Scissor(scissor.x, scissor.y, Math.min(hMaxX, mMaxX) - scissor.x, mMaxY - scissor.y);
         } else if (hMaxY >= mMaxY && scissor.y <= mMaxY && scissor.x <= x && scissor.x <= mMaxX) {
@@ -54,8 +60,10 @@ class Scissor {
         } else if (scissor.y <= y && hMaxY >= y && scissor.x >= x && scissor.x <= mMaxX) {
             return new Scissor(x, y, Math.min(hMaxX, mMaxX) - x, hMaxY - y);
         } else if (scissor.y >= y && hMaxY <= mMaxY && scissor.x >= x && scissor.x <= mMaxX && hMaxX >= mMaxX) {
-            return new Scissor(scissor.x, scissor.y, mMaxX - scissor.x, scissor.y);
-        } else if (scissor.y <= y && hMaxY >= y && scissor.x >= x && hMaxX >= mMaxX) {
+            return new Scissor(scissor.x, scissor.y, mMaxX - scissor.x, scissor.height);
+        } else if (scissor.y >= y && hMaxY <= mMaxY && scissor.x <= x && hMaxX >= x) {
+            return new Scissor(x, scissor.y, hMaxX - x, scissor.height);
+        }else if (scissor.y <= y && hMaxY >= y && scissor.x >= x && hMaxX >= mMaxX) {
             return new Scissor(x, scissor.y, hMaxX - x, hMaxY - y);
         } /*else if (scissor.y >= y && mMaxY >= scissor.y && scissor.x >= x && hMaxX >= mMaxX) {
             return new Scissor(scissor.x, scissor.y, mMaxX - scissor.x, hMaxY - y);

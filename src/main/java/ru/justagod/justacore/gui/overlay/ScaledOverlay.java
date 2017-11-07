@@ -4,12 +4,12 @@ package ru.justagod.justacore.gui.overlay;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.justacore.gui.overlay.event.*;
-import ru.justagod.justacore.gui.overlay.parent.OverlayParent;
-import ru.justagod.justacore.gui.overlay.transform.Transformation;
-import ru.justagod.justacore.helper.Rect;
-import ru.justagod.justacore.helper.ScissorHelper;
-import ru.justagod.justacore.helper.Vector;
+import ru.justagod.justacore.gui.listener.*;
+import ru.justagod.justacore.gui.parent.OverlayParent;
+import ru.justagod.justacore.gui.transform.Transformation;
+import ru.justagod.justacore.gui.model.Rect;
+import ru.justagod.justacore.gui.helper.ScissorHelper;
+import ru.justagod.justacore.gui.model.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -140,6 +140,7 @@ public abstract class ScaledOverlay extends Overlay {
 
     /**
      * Необходимо переопределить
+     *
      * @return
      */
     public Rect getMouseRect() {
@@ -245,21 +246,21 @@ public abstract class ScaledOverlay extends Overlay {
             for (MouseScrollingListener listener : scrollingListeners) {
                 listener.onMouseScroll(scrollAmount, mouseX, mouseY, this);
             }
-            return doMouseScroll((mouseX - getScaledX()) / getXFactor(), (mouseY - getScaledY()) / getYFactor(), scrollAmount) || scrollingListeners.size() > 0;
+            return doMouseScroll(mouseX, mouseY, scrollAmount) || scrollingListeners.size() > 0;
         }
         return false;
     }
 
     /**
-     * @param relativeMouseX относительная позиция курсора по X относительно родителя
-     * @param relativeMouseY относительная позиция курсора по Y относительно родителя
-     * @param scrollAmount   равно Mouse.getDWheel()
+     * @param mouseX       абсолютная позиция курсора по X
+     * @param mouseY       абсолютная позиция курсора по Y
+     * @param scrollAmount равно Mouse.getDWheel()
      * @return остановить ли вызов этого метода у других элементов родителя
      * @see OverlayParent
      * @see #getMouseRect()
      * @see #parent
      */
-    protected boolean doMouseScroll(double relativeMouseX, double relativeMouseY, int scrollAmount) {
+    protected boolean doMouseScroll(double mouseX, double mouseY, int scrollAmount) {
         return false;
     }
 

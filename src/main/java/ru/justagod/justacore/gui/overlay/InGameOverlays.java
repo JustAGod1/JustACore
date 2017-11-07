@@ -8,7 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
-import ru.justagod.justacore.gui.overlay.parent.AbstractOverlayParent;
+import ru.justagod.justacore.gui.parent.AbstractOverlayParent;
 
 import java.util.ConcurrentModificationException;
 

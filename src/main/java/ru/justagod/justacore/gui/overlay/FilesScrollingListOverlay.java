@@ -3,8 +3,8 @@ package ru.justagod.justacore.gui.overlay;
 import javafx.util.Callback;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
-import ru.justagod.justacore.gui.overlay.event.MouseClickListener;
-import ru.justagod.justacore.gui.overlay.parent.PanelOverlay;
+import ru.justagod.justacore.gui.listener.MouseClickListener;
+import ru.justagod.justacore.gui.parent.PanelOverlay;
 
 import java.io.File;
 import java.io.FileFilter;

@@ -37,14 +37,14 @@ public abstract class AbstractButtonOverlay extends ScaledOverlay {
 
     public AbstractButtonOverlay(double x, double y, String text, final Runnable onClick) {
         this(x, y, 20, 2, text, onClick);
-        setDoScissor(true);
+        setDoScissor(false);
     }
 
     public AbstractButtonOverlay(double x, double y, double width, double height, String text, final Runnable onClick) {
         super(x, y, width, height);
         this.text = text;
         this.onClick = onClick;
-        setDoScissor(true);
+        setDoScissor(false);
 
     }
 

@@ -4,8 +4,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.ResourceLocation;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.justacore.gui.overlay.animation.OverlayAnimator;
-import ru.justagod.justacore.helper.Vector;
+import ru.justagod.justacore.gui.animation.OverlayAnimator;
+import ru.justagod.justacore.gui.model.Vector;
 
 import java.util.ArrayList;
 import java.util.Iterator;

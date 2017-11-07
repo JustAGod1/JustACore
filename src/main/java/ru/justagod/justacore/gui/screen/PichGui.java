@@ -9,8 +9,8 @@ import org.lwjgl.input.Mouse;
 import ru.justagod.justacore.gui.overlay.CenteredTextOverlay;
 import ru.justagod.justacore.gui.overlay.Overlay;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
-import ru.justagod.justacore.gui.overlay.parent.OverlayParent;
-import ru.justagod.justacore.gui.overlay.set.OverlaySet;
+import ru.justagod.justacore.gui.parent.OverlayParent;
+import ru.justagod.justacore.gui.set.OverlaySet;
 
 import java.util.*;
 

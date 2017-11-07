@@ -5,7 +5,6 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.util.ChatAllowedCharacters;
 import net.minecraft.util.MathHelper;
 import org.lwjgl.opengl.GL11;
-import ru.justagod.justacore.gui.overlay.event.KeyboardListener;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,75 +31,74 @@ public class TextInputOverlay extends ScaledOverlay  {
     public TextInputOverlay(double x, double y) {
         super(x, y);
         isEnabled = true;
+        setDoScissor(true);
     }
 
     public TextInputOverlay(double x, double y, double width, double height) {
         super(x, y, width, height);
         isEnabled = true;
-        keyboardListeners.add(new KeyboardListener() {
-            @Override
-            public void onKey(ScaledOverlay overlay, char key, int keyCode) {
-                switch (key) {
-                    case 1:
-                        setCursorPositionEnd();
-                        setSelectionPos(0);
+        keyboardListeners.add((overlay, key, keyCode) -> {
+            switch (key) {
+                case 1:
+                    setCursorPositionEnd();
+                    setSelectionPos(0);
 
-                    case 22:
-                        if (isEnabled) {
-                            writeText(GuiScreen.getClipboardString());
-                        }
+                case 22:
+                    if (isEnabled) {
+                        writeText(GuiScreen.getClipboardString());
+                    }
 
 
-                    default:
-                        switch (keyCode) {
-                            case 14:
-                                if (GuiScreen.isCtrlKeyDown()) {
-                                    if (isEnabled) {
-                                        deleteWords(-1);
-                                    }
-                                } else if (isEnabled) {
-                                    deleteFromCursor(-1);
+                default:
+                    switch (keyCode) {
+                        case 14:
+                            if (GuiScreen.isCtrlKeyDown()) {
+                                if (isEnabled) {
+                                    deleteWords(-1);
+                                }
+                            } else if (isEnabled) {
+                                deleteFromCursor(-1);
+                            }
+
+                        case 199:
+                            if (GuiScreen.isShiftKeyDown()) {
+                                setSelectionPos(0);
+                            } else {
+                                setCursorPositionZero();
+                            }
+
+                        case 207:
+                            if (GuiScreen.isShiftKeyDown()) {
+                                setSelectionPos(text.size());
+                            } else {
+                                setCursorPositionEnd();
+                            }
+
+                        case 203:
+                            moveCursor(-1);
+                        case 205:
+                            moveCursor(1);
+                        case 211:
+                            if (GuiScreen.isCtrlKeyDown()) {
+                                if (isEnabled) {
+                                    deleteWords(1);
+                                }
+                            } else if (isEnabled) {
+                                deleteFromCursor(1);
+                            }
+
+                        default:
+                            if (ChatAllowedCharacters.isAllowedCharacter(key)) {
+                                if (isEnabled) {
+                                    writeText(Character.toString(key));
                                 }
 
-                            case 199:
-                                if (GuiScreen.isShiftKeyDown()) {
-                                    setSelectionPos(0);
-                                } else {
-                                    setCursorPositionZero();
-                                }
-
-                            case 207:
-                                if (GuiScreen.isShiftKeyDown()) {
-                                    setSelectionPos(text.size());
-                                } else {
-                                    setCursorPositionEnd();
-                                }
-
-                            case 203:
-                                moveCursor(-1);
-                            case 205:
-                                moveCursor(1);
-                            case 211:
-                                if (GuiScreen.isCtrlKeyDown()) {
-                                    if (isEnabled) {
-                                        deleteWords(1);
-                                    }
-                                } else if (isEnabled) {
-                                    deleteFromCursor(1);
-                                }
-
-                            default:
-                                if (ChatAllowedCharacters.isAllowedCharacter(key)) {
-                                    if (isEnabled) {
-                                        writeText(Character.toString(key));
-                                    }
-
-                                } else {
-                                }
-                        }
-                }
+                            } else {
+                            }
+                    }
             }
         });
+        setDoScissor(true);
     }
 
     public boolean isEnabled() {

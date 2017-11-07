@@ -1,7 +1,7 @@
 package ru.justagod.justacore.gui.overlay;
 
 import org.lwjgl.opengl.GL11;
-import ru.justagod.justacore.helper.DrawHelper;
+import ru.justagod.justacore.gui.helper.DrawHelper;
 
 /**
  * Created by JustAGod on 04.11.17.

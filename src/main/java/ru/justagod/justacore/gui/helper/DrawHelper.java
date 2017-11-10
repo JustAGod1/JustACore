@@ -144,6 +144,8 @@ public final class DrawHelper {
     }
 
     public static void bindCursor(CursorType cursorType) {
+        // FIXME: 10.11.17 Вернуть курсоры!
+        if (0 == 0) return;
         Cursor cursor = loadedCursors.get(cursorType);
         if (cursor == null) {
             throw new NullPointerException(String.format("Курсор %s почему-то не был загружен", cursorType.name()));

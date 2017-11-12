@@ -2,7 +2,6 @@ package ru.justagod.justacore.gui.parent;
 
 
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
-import ru.justagod.justacore.gui.set.OverlaySet;
 
 import java.util.Collection;
 
@@ -17,11 +16,7 @@ public interface OverlayParent {
 
     Collection<ScaledOverlay> getOverlays();
 
-    void setOverlays(OverlaySet overlaySet);
-
     void addOverlays(Collection<ScaledOverlay> overlays);
-
-    void appendOverlays(OverlaySet overlaySet);
 
     void moveUp(ScaledOverlay overlay);
 

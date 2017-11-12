@@ -2,7 +2,6 @@ package ru.justagod.justacore.gui.parent;
 
 
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
-import ru.justagod.justacore.gui.set.OverlaySet;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -162,17 +161,6 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
         for (ScaledOverlay overlay : overlays) {
             addOverlay(overlay);
         }
-    }
-
-    @Override
-    public void setOverlays(OverlaySet overlaySet) {
-        clear();
-        addOverlays(overlaySet.getOverlays());
-    }
-
-    @Override
-    public void appendOverlays(OverlaySet overlaySet) {
-        addOverlays(overlaySet.getOverlays());
     }
 
     @Override

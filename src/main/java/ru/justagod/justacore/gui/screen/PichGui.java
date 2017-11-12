@@ -11,7 +11,6 @@ import ru.justagod.justacore.gui.overlay.CenteredTextOverlay;
 import ru.justagod.justacore.gui.overlay.Overlay;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 import ru.justagod.justacore.gui.parent.OverlayParent;
-import ru.justagod.justacore.gui.set.OverlaySet;
 
 import java.util.*;
 
@@ -176,11 +175,7 @@ public class PichGui extends GuiScreen implements OverlayParent {
         return overlays;
     }
 
-    @Override
-    public void setOverlays(OverlaySet overlaySet) {
-        clear();
-        appendOverlays(overlaySet);
-    }
+
 
     @Override
     public void addOverlays(Collection<ScaledOverlay> overlays) {
@@ -189,14 +184,7 @@ public class PichGui extends GuiScreen implements OverlayParent {
         }
     }
 
-    @Override
-    public void appendOverlays(OverlaySet overlaySet) {
-        Collection<ScaledOverlay> overlays = overlaySet.getOverlays();
 
-        for (ScaledOverlay overlay : overlays) {
-            addOverlay(overlay);
-        }
-    }
 
     @Override
     public void moveUp(ScaledOverlay overlay) {

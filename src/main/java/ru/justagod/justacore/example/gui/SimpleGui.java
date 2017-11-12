@@ -1,15 +1,19 @@
 package ru.justagod.justacore.example.gui;
 
 import net.minecraft.client.gui.GuiButton;
-import ru.justagod.justacore.gui.model.Color;
-import ru.justagod.justacore.gui.overlay.*;
 import ru.justagod.justacore.gui.animation.MovingToAnimation;
 import ru.justagod.justacore.gui.animation.QueuedAnimation;
-import ru.justagod.justacore.gui.parent.AbstractPanelOverlay;
-import ru.justagod.justacore.gui.parent.OverlayParent;
-import ru.justagod.justacore.gui.screen.PichGui;
+import ru.justagod.justacore.gui.model.Color;
 import ru.justagod.justacore.gui.model.Dimensions;
 import ru.justagod.justacore.gui.model.Vector;
+import ru.justagod.justacore.gui.overlay.*;
+import ru.justagod.justacore.gui.parent.OverlayParent;
+import ru.justagod.justacore.gui.screen.PichGui;
+
+import javax.imageio.ImageIO;
+
+import java.io.File;
+import java.io.IOException;
 
 import static ru.justagod.justacore.gui.helper.MathHelper.randomFloat;
 
@@ -36,9 +40,6 @@ public class SimpleGui extends PichGui {
     }
 
     private void scrollingExample() {
-
-
-
         final HorizontalScrollingOverlay scrollingOverlay = new HorizontalScrollingOverlay(2, 50, 96, 48, new Dimensions(2000, 2000), new Color(0.2, 0.2, 0.2, 0.2));
         //scrollingOverlay.setScaleMode(ScaledOverlay.ScaleMode.HEIGHT_EQUAL_WIDTH);
         addOverlay(scrollingOverlay);
@@ -46,24 +47,27 @@ public class SimpleGui extends PichGui {
         TextOverlay o = new TextOverlay(10, 0, "Анимация");
         addOverlay(o);
 
+
         o.addAnimator(new QueuedAnimation.Builder().append(new MovingToAnimation(40, 90, 0)).append(new MovingToAnimation(40, 10, 0)).setCycled().build());
 
+        try {
+            scrollingOverlay.addOverlay(new BufferedImageOverlay(80, 30, 40, 40, ImageIO.read(new File("/Users/Yuri/Desktop/lampa_ruka_svet_noch_117808_3840x2160.jpg"))));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         scrollingOverlay.addOverlay(new TextInputOverlay(50, 60, 10, 2));
-        AbstractPanelOverlay parent = new VerticalScrollingOverlay(2, 2, 96, 48, new Dimensions(2000, 2000), new Color(0.2, 0.2, 0.2, 1));
-        scrollingOverlay.addOverlay(parent);
 
-        ColorButtonOverlay button = new ColorButtonOverlay(2, 30, 20, 20, "Добавить", () -> {
+        ColorButtonOverlay button = new ColorButtonOverlay(2, 2, 10, 20, "Добавить", () -> {
             generateNew(scrollingOverlay);
-            parent.toFront();
 
         }, 1, 0.5, 0.5, 1);
-        scrollingOverlay.addOverlay(button);
+        addOverlay(button);
         button.setScaleMode(ScaledOverlay.ScaleMode.DONT_SCALE_HEIGHT);
 
 
         for (int i = 0; i < 500; i++) {
-            generateNew(parent);
+            generateNew(scrollingOverlay);
         }
     }
 

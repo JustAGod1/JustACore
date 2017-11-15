@@ -54,13 +54,10 @@ public abstract class Overlay {
     }
 
 
-    protected void bindGuiTexture(String path) {
-        bindTexture(new ResourceLocation("illnesses", "textures/gui/" + path));
+    protected Minecraft getMinecraft() {
+        return Minecraft.getMinecraft();
     }
 
-    protected void bindTexture(String path) {
-        bindTexture(new ResourceLocation("illnesses", path));
-    }
 
     protected void bindTexture(ResourceLocation location) {
         Minecraft.getMinecraft().getTextureManager().bindTexture(location);

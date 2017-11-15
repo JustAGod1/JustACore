@@ -91,6 +91,11 @@ public class BufferedImageOverlay extends ScaledOverlay {
 
     }
 
+    @Override
+    public void onDestroy() {
+        glDeleteTextures(textureId);
+    }
+
     public BufferedImage getImage() {
         return image;
     }

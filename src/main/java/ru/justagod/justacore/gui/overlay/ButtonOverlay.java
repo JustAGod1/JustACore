@@ -8,6 +8,6 @@ import net.minecraft.util.ResourceLocation;
 public class ButtonOverlay extends CustomButtonOverlay {
     public ButtonOverlay(double x, double y, double width, String text, Runnable onClick) {
         super(x, y, width, 20, text, onClick, new ResourceLocation("jac", "textures/gui/gui_button.png"));
-        setScaleMode(ScaleMode.DONT_SCALE_HEIGHT);
+        setScaleSizeMode(ScaleSizeMode.DONT_SCALE_HEIGHT);
     }
 }

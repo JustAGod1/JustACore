@@ -11,7 +11,6 @@ import ru.justagod.justacore.gui.parent.OverlayParent;
 import ru.justagod.justacore.gui.screen.PichGui;
 
 import javax.imageio.ImageIO;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -27,7 +26,7 @@ public class SimpleGui extends PichGui {
         setPauseGame(false);
         clear();
 
-        addOverlay(new ButtonOverlay(40, 40, 20, "Тык", ()->{
+        addOverlay(new ButtonOverlay(40, 40, 20, "Тык", () -> {
             clear();
             scrollingExample();
         }));
@@ -41,7 +40,7 @@ public class SimpleGui extends PichGui {
 
     private void scrollingExample() {
         final HorizontalScrollingOverlay scrollingOverlay = new HorizontalScrollingOverlay(2, 50, 96, 48, new Dimensions(2000, 2000), new Color(0.2, 0.2, 0.2, 0.2));
-        //scrollingOverlay.setScaleMode(ScaledOverlay.ScaleMode.HEIGHT_EQUAL_WIDTH);
+        //scrollingOverlay.setScaleSizeMode(ScaledOverlay.ScaleSizeMode.HEIGHT_EQUAL_WIDTH);
         addOverlay(scrollingOverlay);
 
         TextOverlay o = new TextOverlay(10, 0, "Анимация");
@@ -63,7 +62,7 @@ public class SimpleGui extends PichGui {
 
         }, 1, 0.5, 0.5, 1);
         addOverlay(button);
-        button.setScaleMode(ScaledOverlay.ScaleMode.DONT_SCALE_HEIGHT);
+        button.setScaleSizeMode(ScaledOverlay.ScaleSizeMode.DONT_SCALE_HEIGHT);
 
 
         for (int i = 0; i < 500; i++) {
@@ -74,7 +73,15 @@ public class SimpleGui extends PichGui {
     private void generateNew(OverlayParent parent) {
         ColorOverlay o = new ColorOverlay(randomFloat(0, 100), randomFloat(0, 100), 10, 10, 1, randomFloat(0, 1), randomFloat(0, 1), randomFloat(0, 1));
 
-        o.dragListeners.add((scaledOverlay, from, to) -> scaledOverlay.setScaledPos(to.subtract(new Vector(5, 5))));
+        o.dragListeners.add((scaledOverlay, from, to) -> {
+            Vector pos = scaledOverlay.getScaledPos().add(to.subtract(from));
+            scaledOverlay.setScaledPos(pos);
+            ColorOverlay newO = new ColorOverlay(pos.getX(), pos.getY(), 10, 10, 1, randomFloat(0, 1), randomFloat(0, 1), randomFloat(0, 1));
+
+            newO.addAnimator(new QueuedAnimation.Builder().appendDelay(40).appendRemove().build());
+
+            parent.addOverlay(newO);
+        });
         o.setScaleSize(false);
         parent.addOverlay(o);
 

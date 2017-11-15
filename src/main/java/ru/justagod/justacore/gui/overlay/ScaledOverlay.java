@@ -8,6 +8,7 @@ import ru.justagod.justacore.gui.helper.DrawHelper;
 import ru.justagod.justacore.gui.helper.DrawHelper.CursorType;
 import ru.justagod.justacore.gui.helper.ScissorHelper;
 import ru.justagod.justacore.gui.listener.*;
+import ru.justagod.justacore.gui.model.Dimensions;
 import ru.justagod.justacore.gui.model.Rect;
 import ru.justagod.justacore.gui.model.Vector;
 import ru.justagod.justacore.gui.parent.OverlayParent;
@@ -17,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.glDisable;
-import static ru.justagod.justacore.gui.overlay.ScaledOverlay.ScaleMode.NORMAL;
 
 /**
  * Created by JustAGod on 16.10.17.
@@ -28,13 +28,13 @@ public abstract class ScaledOverlay extends Overlay {
 
 
     // Listeners
-    public final List<Transformation> transformations = new ArrayList<>();
-    public final List<MouseClickListener> mouseDoubleClickListeners = new ArrayList<>();
-    public final List<MouseClickListener> mouseClickListeners = new ArrayList<>();
-    public final List<MouseHoverListener> mouseHoverListeners = new ArrayList<>();
-    public final List<KeyboardListener> keyboardListeners = new ArrayList<>();
-    public final List<MouseDragListener> dragListeners = new ArrayList<>();
-    public final List<MouseScrollingListener> scrollingListeners = new ArrayList<>();
+    public List<Transformation> transformations;
+    public List<MouseClickListener> mouseDoubleClickListeners;
+    public List<MouseClickListener> mouseClickListeners;
+    public List<MouseHoverListener> mouseHoverListeners;
+    public List<KeyboardListener> keyboardListeners;
+    public List<MouseDragListener> dragListeners;
+    public List<MouseScrollingListener> scrollingListeners;
 
 
     protected double width;
@@ -44,12 +44,20 @@ public abstract class ScaledOverlay extends Overlay {
     protected boolean doScissor = false;
     protected boolean isFocused;
     protected boolean isMouseInside;
-    protected ScaleMode scaleMode = NORMAL;
+    protected ScaleSizeMode scaleSizeMode = ScaleSizeMode.NORMAL;
+    protected ScalePosMode scalePosMode = ScalePosMode.NORMAL;
     protected CursorType cursor = CursorType.NORMAL;
 
     protected OverlayParent parent;
 
     private long lastClickTime;
+
+    private double scaledHeight;
+    private double scaledWidth;
+    private double scaledX;
+    private double scaledY;
+    private Rect mouseRect;
+    private Rect renderRect;
 
     public ScaledOverlay(double x, double y) {
         super(x, y);
@@ -67,6 +75,55 @@ public abstract class ScaledOverlay extends Overlay {
         this.height = height;
         this.scalePosition = scalePosition;
         this.scaleSize = scaleSize;
+    }
+
+    public List<Transformation> getTransformations() {
+        if (transformations == null) {
+            transformations = new ArrayList<>();
+        }
+        return transformations;
+    }
+
+    public List<MouseClickListener> getMouseDoubleClickListeners() {
+        if (mouseDoubleClickListeners == null) {
+            mouseDoubleClickListeners = new ArrayList<>();
+        }
+        return mouseDoubleClickListeners;
+    }
+
+    public List<MouseClickListener> getMouseClickListeners() {
+        if (mouseClickListeners == null) {
+            mouseClickListeners = new ArrayList<>();
+        }
+        return mouseClickListeners;
+    }
+
+    public List<MouseHoverListener> getMouseHoverListeners() {
+        if (mouseHoverListeners == null) {
+            mouseHoverListeners = new ArrayList<>();
+        }
+        return mouseHoverListeners;
+    }
+
+    public List<KeyboardListener> getKeyboardListeners() {
+        if (keyboardListeners == null) {
+            keyboardListeners = new ArrayList<>();
+        }
+        return keyboardListeners;
+    }
+
+    public List<MouseDragListener> getDragListeners() {
+        if (dragListeners == null) {
+            dragListeners = new ArrayList<>();
+        }
+        return dragListeners;
+    }
+
+    public List<MouseScrollingListener> getScrollingListeners() {
+        if (scrollingListeners == null) {
+            scrollingListeners = new ArrayList<>();
+        }
+        return scrollingListeners;
     }
 
     public boolean onKey(char key, int code) {
@@ -87,6 +144,14 @@ public abstract class ScaledOverlay extends Overlay {
 
     }
 
+    public void onActivate() {
+        recalculateStatements();
+    }
+
+    public void onDestroy() {
+
+    }
+
     public boolean isDoScissor() {
         return doScissor;
     }
@@ -102,20 +167,46 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public double getScaledX() {
-        return (isScalePosition() ? getX() * getXFactor() : x) + parent.getScaledX();
+        return scaledX;
     }
 
-    public void setScaledX(double scaledX) {
-        x = isScalePosition() ? (scaledX - parent.getScaledX()) / getXFactor() : scaledX - parent.getScaledX();
+    protected double calculateScaledX() {
+        if (isScalePosition()) {
+            switch (scalePosMode) {
+                case NORMAL:
+                case CENTRALIZE_Y:
+                    return getX() * getXFactor() + parent.getScaledX();
+                case CENTRALIZE:
+                case CENTRALIZE_X:
+                    return getX() * getXFactor() + parent.getScaledX() - getScaledWidth() / 2;
+            }
+        } else {
+            return x + parent.getScaledX();
+        }
+        return -1;
     }
 
-    protected double getScaledY() {
-        return (isScalePosition() ? getY() * getYFactor() : y) + parent.getScaledY();
+
+    public double getScaledY() {
+        return scaledY;
     }
 
-    public void setScaledY(double scaledY) {
-        y = isScalePosition() ? (scaledY - parent.getScaledY()) / getYFactor() : scaledY - parent.getScaledY();
+    protected double calculateScaledY() {
+        if (isScalePosition()) {
+            switch (scalePosMode) {
+                case NORMAL:
+                case CENTRALIZE_X:
+                    return getY() * getYFactor() + parent.getScaledY();
+                case CENTRALIZE:
+                case CENTRALIZE_Y:
+                    return getY() * getYFactor() + parent.getScaledY() - getScaledHeight() / 2;
+            }
+        } else {
+            return x + parent.getScaledX();
+        }
+        return -1;
     }
+
 
     public double getXFactor() {
         return parent.getParentWidth() / BOUND;
@@ -126,8 +217,12 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public double getScaledWidth() {
+        return scaledWidth;
+    }
+
+    protected double calculateScaledWidth() {
         if (isScaleSize()) {
-            switch (scaleMode) {
+            switch (scaleSizeMode) {
                 case NORMAL:
                     return width * getXFactor();
                 case DONT_SCALE_WIDTH:
@@ -142,28 +237,33 @@ public abstract class ScaledOverlay extends Overlay {
         }
     }
 
+    public Rect getMouseRect() {
+        return mouseRect;
+    }
+
     /**
      * Необходимо переопределить
      *
      * @return область в которой считается что мышка внутри
      */
-    public Rect getMouseRect() {
-
-
+    protected Rect calculateMouseRect() {
         return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + getScaledHeight());
     }
 
+    public double getScaledHeight() {
+        return scaledHeight;
+    }
 
     /**
      * Расчитывает высоту элемента согласно всем настройкам
      *
      * @return абсолютная высота элемента
-     * @see #setScaleMode(ScaleMode)
+     * @see #setScaleSizeMode(ScaleSizeMode)
      * @see #setScaleSize(boolean)
      */
-    public double getScaledHeight() {
+    protected double calculateScaledHeight() {
         if (isScaleSize()) {
-            switch (scaleMode) {
+            switch (scaleSizeMode) {
                 case NORMAL:
                     return height * getYFactor();
                 case DONT_SCALE_HEIGHT:
@@ -186,12 +286,22 @@ public abstract class ScaledOverlay extends Overlay {
         isFocused = focused;
     }
 
-    public ScaleMode getScaleMode() {
-        return scaleMode;
+    public ScalePosMode getScalePosMode() {
+        return scalePosMode;
     }
 
-    public void setScaleMode(ScaleMode scaleMode) {
-        this.scaleMode = scaleMode;
+    public void setScalePosMode(ScalePosMode scalePosMode) {
+        this.scalePosMode = scalePosMode;
+        recalculateStatements();
+    }
+
+    public ScaleSizeMode getScaleSizeMode() {
+        return scaleSizeMode;
+    }
+
+    public void setScaleSizeMode(ScaleSizeMode scaleSizeMode) {
+        this.scaleSizeMode = scaleSizeMode;
+        recalculateStatements();
     }
 
     public boolean isScalePosition() {
@@ -206,6 +316,7 @@ public abstract class ScaledOverlay extends Overlay {
      */
     public void setScalePosition(boolean scalePosition) {
         this.scalePosition = scalePosition;
+        recalculateStatements();
     }
 
     public boolean isScaleSize() {
@@ -214,6 +325,7 @@ public abstract class ScaledOverlay extends Overlay {
 
     public void setScaleSize(boolean scaleSize) {
         this.scaleSize = scaleSize;
+        recalculateStatements();
     }
 
     public double getWidth() {
@@ -448,16 +560,52 @@ public abstract class ScaledOverlay extends Overlay {
         return x;
     }
 
+    @Override
+    public void setX(double x) {
+        super.setX(x);
+        recalculateStatements();
+    }
+
     public double getY() {
         return y;
+    }
+
+    @Override
+    public void setY(double y) {
+        super.setY(y);
+        recalculateStatements();
     }
 
     public OverlayParent getParent() {
         return parent;
     }
 
-    public synchronized void setParent(OverlayParent parent) {
+    public synchronized ScaledOverlay setParent(OverlayParent parent) {
         this.parent = parent;
+        return this;
+    }
+
+    protected void recalculateStatements() {
+        renderRect = calculateRenderRect();
+        mouseRect = calculateMouseRect();
+
+        scaledHeight = calculateScaledHeight();
+        scaledWidth = calculateScaledWidth();
+
+        scaledX = calculateScaledX();
+        scaledY = calculateScaledY();
+    }
+
+    public void onResize() {
+        recalculateStatements();
+    }
+
+    public Rect getRenderRect() {
+        return renderRect;
+    }
+
+    protected Rect calculateRenderRect() {
+        return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + getScaledHeight());
     }
 
     public void remove() {
@@ -478,7 +626,7 @@ public abstract class ScaledOverlay extends Overlay {
                 "\n, scaleSize=" + scaleSize +
                 "\n, doScissor=" + doScissor +
                 "\n, isFocused=" + isFocused +
-                "\n, scaleMode=" + scaleMode +
+                "\n, scaleSizeMode=" + scaleSizeMode +
                 "\n, parent=" + parent +
                 "\n, scaledDimensions=" + getDimensions() +
                 "\n} " + super.toString();
@@ -489,20 +637,15 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public void setScaledPos(Vector scaledPos) {
-        setScaledX(scaledPos.getX());
-        setScaledY(scaledPos.getY());
+        // TODO: 15.11.17 Not implemented
     }
 
     protected CursorType getCursorType(int mouseX, int mouseY) {
         return cursor;
     }
 
-    public Vector getDimensions() {
-        return new Vector(getScaledWidth(), getScaledHeight());
-    }
-
-    protected Rect getRenderRect() {
-        return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + getScaledHeight());
+    public Dimensions getDimensions() {
+        return new Dimensions(getScaledWidth(), getScaledHeight());
     }
 
     public CursorType getCursor() {
@@ -521,11 +664,18 @@ public abstract class ScaledOverlay extends Overlay {
         parent.moveToBackground(this);
     }
 
-    public enum ScaleMode {
+    public boolean isMouseInside() {
+        return isMouseInside;
+    }
+
+    public enum ScaleSizeMode {
         WIDTH_EQUAL_HEIGHT, HEIGHT_EQUAL_WIDTH, NORMAL, DONT_SCALE_WIDTH, DONT_SCALE_HEIGHT
     }
 
-    public boolean isMouseInside() {
-        return isMouseInside;
+    public enum ScalePosMode {
+        CENTRALIZE_Y,
+        CENTRALIZE_X,
+        CENTRALIZE,
+        NORMAL
     }
 }

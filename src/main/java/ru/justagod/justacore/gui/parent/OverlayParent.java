@@ -14,8 +14,6 @@ public interface OverlayParent {
 
     void removeOverlay(ScaledOverlay overlay);
 
-    Collection<ScaledOverlay> getOverlays();
-
     void addOverlays(Collection<ScaledOverlay> overlays);
 
     void moveUp(ScaledOverlay overlay);

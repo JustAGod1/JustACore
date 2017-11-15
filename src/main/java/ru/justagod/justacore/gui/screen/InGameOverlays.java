@@ -1,4 +1,4 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.screen;
 
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -8,6 +8,8 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
+import ru.justagod.justacore.gui.overlay.Overlay;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 import ru.justagod.justacore.gui.parent.AbstractOverlayParent;
 
 import java.util.ConcurrentModificationException;

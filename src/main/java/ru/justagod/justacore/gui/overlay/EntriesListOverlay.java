@@ -85,7 +85,7 @@ public class EntriesListOverlay extends ScaledOverlay {
 
         public Entry(double height) {
             super(0, 0, 100, height);
-            setScaleMode(ScaleMode.DONT_SCALE_HEIGHT);
+            setScaleSizeMode(ScaleSizeMode.DONT_SCALE_HEIGHT);
         }
     }
 }

@@ -7,30 +7,30 @@ import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Mouse;
 import ru.justagod.justacore.gui.helper.DrawHelper;
+import ru.justagod.justacore.gui.model.OverlaysCollection;
 import ru.justagod.justacore.gui.overlay.CenteredTextOverlay;
-import ru.justagod.justacore.gui.overlay.Overlay;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 
-import java.util.*;
+import java.util.Collection;
 
 /**
  * Created by JustAGod on 17.10.17.
  */
 public class PichGui extends GuiScreen implements OverlayParent {
 
-    protected List<ScaledOverlay> overlays = new ArrayList<ScaledOverlay>();
-
+    protected OverlaysCollection overlays;
     protected boolean pauseGame = true;
-
-
     private boolean released = true;
     private int lastMouseX = -1;
     private int lastMouseY = -1;
 
-    private Object writeMutex = new Object();
+    {
+        overlays = new OverlaysCollection(this);
+    }
 
     public PichGui(boolean pauseGame) {
+
         this.pauseGame = pauseGame;
         DrawHelper.bindCursor(DrawHelper.CursorType.NORMAL);
     }
@@ -42,10 +42,21 @@ public class PichGui extends GuiScreen implements OverlayParent {
 
     public static void openPichGui(PichGui gui) {
 
+
         Minecraft.getMinecraft().displayGuiScreen(gui);
         if (gui != null) {
             FMLCommonHandler.instance().bus().post(new OpenPichGuiEvent(gui));
         }
+    }
+
+    @Override
+    public void setWorldAndResolution(Minecraft minecraft, int width, int height) {
+        super.setWorldAndResolution(minecraft, width, height);
+
+        overlays.iterate(o -> {
+            o.onResize();
+            return true;
+        });
     }
 
     public boolean isPauseGame() {
@@ -62,13 +73,12 @@ public class PichGui extends GuiScreen implements OverlayParent {
     }
 
     @Override
-    protected synchronized void keyTyped(char c, int keyCode) {
+    protected void keyTyped(char c, int keyCode) {
         super.keyTyped(c, keyCode);
-        for (int i = 0; i < overlays.size(); i++) {
-            ScaledOverlay overlay = overlays.get(i);
-
+        overlays.iterate(overlay -> {
             overlay.onKey(c, keyCode);
-        }
+            return true;
+        });
     }
 
     @Override
@@ -84,37 +94,38 @@ public class PichGui extends GuiScreen implements OverlayParent {
             mouseX /= Minecraft.getMinecraft().displayWidth / getResolution().getScaledWidth();
             mouseY /= Minecraft.getMinecraft().displayHeight / getResolution().getScaledHeight();
 
-            for (ScaledOverlay overlay : overlays) {
-                overlay.onMouseScroll(mouseX, mouseY, scrollAmount);
-            }
+            int finalMouseX = mouseX;
+            int finalMouseY = mouseY;
+            overlays.iterate(overlay -> {
+                overlay.onMouseScroll(finalMouseX, finalMouseY, scrollAmount);
+                return true;
+            });
         }
     }
 
 
     @Override
-    protected synchronized void mouseClicked(int x, int y, int type) {
+    protected void mouseClicked(int x, int y, int type) {
         super.mouseClicked(x, y, type);
 
-        for (int i = overlays.size() - 1; i >= 0; i--) {
-            ScaledOverlay overlay = overlays.get(i);
-            if (overlay.onClick(x, y)) return;
-        }
+        overlays.downIterate(overlay -> !overlay.onClick(x, y));
     }
 
     @Override
-    public synchronized void drawScreen(int mouseX, int mouseY, float partialTick) {
+    public void drawScreen(int mouseX, int mouseY, float partialTick) {
 
         doPreDraw(mouseX, mouseY, partialTick);
 
-        for (int i = 0; i < overlays.size(); i++) {
-            Overlay overlay = overlays.get(i);
+        overlays.iterate(overlay -> {
             overlay.draw(partialTick, mouseX, mouseY);
             overlay.drawText(partialTick, mouseX, mouseY);
-        }
+            return true;
+        });
         doPostDraw(mouseX, mouseY, partialTick);
     }
 
-    protected void doPostDraw(int mouseX, int mouseY, float partialTick) {}
+    protected void doPostDraw(int mouseX, int mouseY, float partialTick) {
+    }
 
     protected void doPreDraw(int mouseX, int mouseY, float partialTick) {
         super.drawScreen(mouseX, mouseY, partialTick);
@@ -122,17 +133,15 @@ public class PichGui extends GuiScreen implements OverlayParent {
     }
 
     @Override
-    public synchronized void updateScreen() {
+    public void updateScreen() {
         super.updateScreen();
 
         if (!Mouse.isButtonDown(0)) {
             released = true;
         }
 
-        for (int i = 0; i < overlays.size(); i++) {
-            Overlay overlay = overlays.get(i);
-                overlay.update();
-            }
+        overlays.update();
+
 
     }
 
@@ -141,16 +150,9 @@ public class PichGui extends GuiScreen implements OverlayParent {
         if (!released) {
 
             if (lastMouseX != -1 && lastMouseY != -1) {
-                try {
-                    for (int i = overlays.size() - 1; i >= 0; i--) {
-                        ScaledOverlay overlay = overlays.get(i);
-                        if (overlay.onMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY)) {
-                            return;
-                        }
-                    }
-                } catch (ConcurrentModificationException ignored) {
+                overlays.downIterate(overlay -> !overlay.onMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY));
 
-                }
+
             }
         } else released = false;
         lastMouseX = mouseX;
@@ -158,24 +160,14 @@ public class PichGui extends GuiScreen implements OverlayParent {
     }
 
     @Override
-    public synchronized void addOverlay(ScaledOverlay overlay) {
+    public void addOverlay(ScaledOverlay overlay) {
         overlays.add(overlay);
-        overlay.setParent(this);
     }
 
     @Override
-    public synchronized void removeOverlay(ScaledOverlay overlay) {
-        if (overlays.remove(overlay)) {
-            overlay.setParent(null);
-        }
+    public void removeOverlay(ScaledOverlay overlay) {
+        overlays.remove(overlay);
     }
-
-    @Override
-    public Collection<ScaledOverlay> getOverlays() {
-        return overlays;
-    }
-
-
 
     @Override
     public void addOverlays(Collection<ScaledOverlay> overlays) {
@@ -185,25 +177,14 @@ public class PichGui extends GuiScreen implements OverlayParent {
     }
 
 
-
     @Override
     public void moveUp(ScaledOverlay overlay) {
-        int position = overlays.indexOf(overlay);
-
-        if (position != -1) {
-            overlays.remove(position);
-            overlays.add(position + 1, overlay);
-        }
+        overlays.moveUp(overlay);
     }
 
     @Override
     public void moveDown(ScaledOverlay overlay) {
-        int position = overlays.indexOf(overlay);
-
-        if (position != -1) {
-            overlays.remove(position);
-            overlays.add(position - 1, overlay);
-        }
+        overlays.moveDown(overlay);
     }
 
     @Override
@@ -227,14 +208,8 @@ public class PichGui extends GuiScreen implements OverlayParent {
     }
 
     @Override
-    public synchronized void clear() {
-        Iterator<ScaledOverlay> iterator = overlays.iterator();
-
-        while (iterator.hasNext()) {
-            ScaledOverlay overlay = iterator.next();
-            overlay.setParent(null);
-            iterator.remove();
-        }
+    public void clear() {
+        overlays.clear();
     }
 
     public void close() {
@@ -252,19 +227,16 @@ public class PichGui extends GuiScreen implements OverlayParent {
     @Override
     public void moveToFront(ScaledOverlay overlay) {
 
-        if (overlays.contains(overlay)) {
-            overlays.remove(overlay);
-            overlays.add(overlays.size(), overlay);
-        }
+        overlays.moveToFront(overlay);
+
+
     }
 
     @Override
     public void moveToBackground(ScaledOverlay overlay) {
 
-        if (overlays.contains(overlay)) {
-            overlays.remove(overlay);
-            overlays.add(0, overlay);
-        }
+        overlays.moveToBackground(overlay);
+
     }
 
     public static class OpenPichGuiEvent extends Event {

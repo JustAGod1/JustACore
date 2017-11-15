@@ -3,10 +3,8 @@ package ru.justagod.justacore.gui.parent;
 
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
@@ -17,6 +15,7 @@ import static org.lwjgl.opengl.GL11.glPushMatrix;
 public abstract class AbstractPanelOverlay extends ScaledOverlay implements OverlayParent {
 
     protected List<ScaledOverlay> overlays = new ArrayList<ScaledOverlay>();
+    private final Queue<Runnable> deleteQueue = new LinkedBlockingQueue<>();
 
     public AbstractPanelOverlay(double x, double y) {
         super(x, y);
@@ -55,10 +54,6 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
         }
     }
 
-    @Override
-    public Collection<ScaledOverlay> getOverlays() {
-        return overlays;
-    }
 
     @Override
     public void moveUp(ScaledOverlay overlay) {

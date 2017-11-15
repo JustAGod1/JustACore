@@ -66,9 +66,11 @@ public class EntriesListOverlay extends ScaledOverlay {
     }
 
     @Override
-    public synchronized void setParent(OverlayParent parent) {
+    public ScaledOverlay setParent(OverlayParent parent) {
         super.setParent(parent);
         scrollingOverlay.setParent(parent);
+
+        return this;
     }
 
     @Override

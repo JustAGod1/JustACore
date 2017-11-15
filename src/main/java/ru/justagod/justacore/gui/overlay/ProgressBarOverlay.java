@@ -41,7 +41,6 @@ public class ProgressBarOverlay extends ScaledOverlay {
     protected void doDrawText(double xPos, double yPos, double width, double height, float partialTick, int mouseX, int mouseY, boolean mouseInBounds) {
         pushAndTranslate(xPos, yPos);
         {
-            bindGuiTexture("view_button.png");
             t.startDrawingQuads();
             t.addVertexWithUV(0, 0, 0, 0, 0);
             t.addVertexWithUV(width * progress, 0, 0, 1, 0);

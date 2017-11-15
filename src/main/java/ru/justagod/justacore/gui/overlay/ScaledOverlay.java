@@ -27,14 +27,16 @@ public abstract class ScaledOverlay extends Overlay {
     public static final int BOUND = 100;
 
 
+
+    protected List<Transformation> transformations;
+
     // Listeners
-    public List<Transformation> transformations;
-    public List<MouseClickListener> mouseDoubleClickListeners;
-    public List<MouseClickListener> mouseClickListeners;
-    public List<MouseHoverListener> mouseHoverListeners;
-    public List<KeyboardListener> keyboardListeners;
-    public List<MouseDragListener> dragListeners;
-    public List<MouseScrollingListener> scrollingListeners;
+    private List<MouseClickListener> mouseDoubleClickListeners;
+    private List<MouseClickListener> mouseClickListeners;
+    private List<MouseHoverListener> mouseHoverListeners;
+    private List<KeyboardListener> keyboardListeners;
+    private List<MouseDragListener> dragListeners;
+    private List<MouseScrollingListener> scrollingListeners;
 
 
     protected double width;
@@ -128,14 +130,16 @@ public abstract class ScaledOverlay extends Overlay {
 
     public boolean onKey(char key, int code) {
         if (isFocused) {
-            if (keyboardListeners.size() > 0) {
-                for (KeyboardListener listener : keyboardListeners) {
-                    listener.onKey(this, key, code);
+            if (keyboardListeners != null) {
+                if (keyboardListeners.size() > 0) {
+                    for (KeyboardListener listener : keyboardListeners) {
+                        listener.onKey(this, key, code);
+                    }
+                    doOnKey(key, code);
+                    return true;
                 }
-
-                return true;
             }
-            doOnKey(key, code);
+
         }
         return false;
     }
@@ -228,7 +232,7 @@ public abstract class ScaledOverlay extends Overlay {
                 case DONT_SCALE_WIDTH:
                     return width;
                 case WIDTH_EQUAL_HEIGHT:
-                    return getScaledHeight();
+                    return calculateScaledHeight();
                 default:
                     return width * getXFactor();
             }
@@ -269,7 +273,7 @@ public abstract class ScaledOverlay extends Overlay {
                 case DONT_SCALE_HEIGHT:
                     return height;
                 case HEIGHT_EQUAL_WIDTH:
-                    return getScaledWidth();
+                    return calculateScaledWidth();
                 default:
                     return height * getYFactor();
             }
@@ -280,10 +284,6 @@ public abstract class ScaledOverlay extends Overlay {
 
     public boolean isFocused() {
         return isFocused;
-    }
-
-    public void setFocused(boolean focused) {
-        isFocused = focused;
     }
 
     public ScalePosMode getScalePosMode() {
@@ -345,8 +345,10 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     protected void runTransformations() {
-        for (Transformation transformation : transformations) {
-            transformation.preTransform(this);
+        if (transformations != null) {
+            for (Transformation transformation : transformations) {
+                transformation.preTransform(this);
+            }
         }
     }
 
@@ -359,10 +361,12 @@ public abstract class ScaledOverlay extends Overlay {
     public boolean onMouseScroll(double mouseX, double mouseY, int scrollAmount) {
 
         if (getMouseRect().isVectorInBounds(new Vector(mouseX, mouseY))) {
-            for (MouseScrollingListener listener : scrollingListeners) {
-                listener.onMouseScroll(scrollAmount, mouseX, mouseY, this);
+            if (scrollingListeners != null) {
+                for (MouseScrollingListener listener : scrollingListeners) {
+                    listener.onMouseScroll(scrollAmount, mouseX, mouseY, this);
+                }
             }
-            return doMouseScroll(mouseX, mouseY, scrollAmount) || scrollingListeners.size() > 0;
+            return doMouseScroll(mouseX, mouseY, scrollAmount) || (scrollingListeners != null && scrollingListeners.size() > 0);
         }
         return false;
     }
@@ -395,8 +399,11 @@ public abstract class ScaledOverlay extends Overlay {
 
         final boolean flag = isDoScissor();
         if (isMouseInside = isInMouseRect(mouseX, mouseY)) {
-            for (MouseHoverListener listener : mouseHoverListeners) {
-                listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
+            if (mouseHoverListeners != null) {
+
+                for (MouseHoverListener listener : mouseHoverListeners) {
+                    listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
+                }
             }
             CursorType cursor = getCursorType(mouseX, mouseY);
             if (cursor != CursorType.NONE) {
@@ -429,10 +436,12 @@ public abstract class ScaledOverlay extends Overlay {
      */
     public boolean onMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
         if (isInMouseRect(lastMouseX, lastMouseY)) {
-            for (MouseDragListener listener : dragListeners) {
-                listener.onDrag(this, new Vector(lastMouseX, lastMouseY), new Vector(mouseX, mouseY));
+            if (dragListeners != null) {
+                for (MouseDragListener listener : dragListeners) {
+                    listener.onDrag(this, new Vector(lastMouseX, lastMouseY), new Vector(mouseX, mouseY));
+                }
             }
-            return doMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY) || dragListeners.size() > 0;
+            return doMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY) || (dragListeners != null && dragListeners.size() > 0);
         }
         return false;
     }
@@ -475,14 +484,18 @@ public abstract class ScaledOverlay extends Overlay {
      */
     public boolean onClick(int mouseX, int mouseY) {
         if (isPointInBounds(mouseX, mouseY)) {
-            for (MouseClickListener listener : mouseClickListeners) {
-                listener.onClick(mouseX - getScaledX(), mouseY - getScaledY(), this);
-
-            }
-            if (System.currentTimeMillis() - lastClickTime <= 200) {
-                for (MouseClickListener listener : mouseDoubleClickListeners) {
+            if (mouseClickListeners != null) {
+                for (MouseClickListener listener : mouseClickListeners) {
                     listener.onClick(mouseX - getScaledX(), mouseY - getScaledY(), this);
 
+                }
+            }
+            if (System.currentTimeMillis() - lastClickTime <= 200) {
+                if (mouseDoubleClickListeners != null) {
+                    for (MouseClickListener listener : mouseDoubleClickListeners) {
+                        listener.onClick(mouseX - getScaledX(), mouseY - getScaledY(), this);
+
+                    }
                 }
                 lastClickTime = 0;
                 doDoubleClick(mouseX, mouseY);
@@ -524,8 +537,10 @@ public abstract class ScaledOverlay extends Overlay {
 
         final boolean flag = isDoScissor();
         if (isMouseInside = isPointInBounds(mouseX, mouseY)) {
-            for (MouseHoverListener listener : mouseHoverListeners) {
-                listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
+            if (mouseHoverListeners != null) {
+                for (MouseHoverListener listener : mouseHoverListeners) {
+                    listener.onHover(mouseX - getScaledX(), mouseY - getScaledY(), this);
+                }
             }
             CursorType cursor = getCursorType(mouseX, mouseY);
             if (cursor != CursorType.NONE) {
@@ -586,14 +601,16 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     protected void recalculateStatements() {
-        renderRect = calculateRenderRect();
-        mouseRect = calculateMouseRect();
+        if (parent != null) {
+            scaledHeight = calculateScaledHeight();
+            scaledWidth = calculateScaledWidth();
 
-        scaledHeight = calculateScaledHeight();
-        scaledWidth = calculateScaledWidth();
+            scaledX = calculateScaledX();
+            scaledY = calculateScaledY();
 
-        scaledX = calculateScaledX();
-        scaledY = calculateScaledY();
+            renderRect = calculateRenderRect();
+            mouseRect = calculateMouseRect();
+        }
     }
 
     public void onResize() {
@@ -636,9 +653,7 @@ public abstract class ScaledOverlay extends Overlay {
         return new Vector(getScaledX(), getScaledY());
     }
 
-    public void setScaledPos(Vector scaledPos) {
-        // TODO: 15.11.17 Not implemented
-    }
+
 
     protected CursorType getCursorType(int mouseX, int mouseY) {
         return cursor;

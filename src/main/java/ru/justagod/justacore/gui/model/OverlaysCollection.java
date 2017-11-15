@@ -13,7 +13,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Created by JustAGod on 14.11.17.
  */
-public final class OverlaysCollection {
+public class OverlaysCollection {
 
     private final Object lock = new Object();
     private final List<ScaledOverlay> overlays;
@@ -82,8 +82,9 @@ public final class OverlaysCollection {
     }
 
     public void moveUp(ScaledOverlay overlay) {
-        int index = overlays.indexOf(overlay);
+
         postQueue.add(() -> {
+            int index = overlays.indexOf(overlay);
             if (overlays.contains(overlay)) {
                 overlays.remove(index);
                 overlays.add(Math.min(index - 1, 0), overlay);
@@ -93,8 +94,9 @@ public final class OverlaysCollection {
     }
 
     public void moveDown(ScaledOverlay overlay) {
-        int index = overlays.indexOf(overlay);
+
         postQueue.add(() -> {
+            int index = overlays.indexOf(overlay);
             if (overlays.contains(overlay)) {
                 overlays.remove(index);
                 overlays.add(Math.max(index + 1, overlays.size()), overlay);
@@ -134,5 +136,13 @@ public final class OverlaysCollection {
 
     public void addToPost(Runnable runnable) {
         postQueue.add(runnable);
+    }
+
+    @Override
+    public String toString() {
+        return "OverlaysCollection{" +
+                "overlays=" + overlays +
+                ", postQueue=" + postQueue +
+                '}';
     }
 }

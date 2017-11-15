@@ -32,7 +32,6 @@ public class ProgressOverlay extends Overlay {
             int WIDTH = 5000000;
 
             // Рисование фона
-            bindTexture("textures/gui/overlay/progress_background.png");
             t.startDrawingQuads();
             {
                 t.addVertexWithUV(0, 0, 0, 0, 0);
@@ -43,7 +42,6 @@ public class ProgressOverlay extends Overlay {
             t.draw();
 
             // Рисование полосы прогреса
-            bindTexture("textures/gui/overlay/progress_foreground.png");
             t.startDrawingQuads();
             {
                 t.addVertexWithUV(5, 0, 0, 0, 0);

@@ -30,11 +30,6 @@ public abstract class AbstractOverlayParent implements OverlayParent {
     }
 
     @Override
-    public Collection<ScaledOverlay> getOverlays() {
-        return overlays;
-    }
-
-    @Override
     public void moveUp(ScaledOverlay overlay) {
         int position = overlays.indexOf(overlay);
 

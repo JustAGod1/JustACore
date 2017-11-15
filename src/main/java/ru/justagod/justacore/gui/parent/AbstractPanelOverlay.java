@@ -1,10 +1,10 @@
 package ru.justagod.justacore.gui.parent;
 
 
+import ru.justagod.justacore.gui.model.OverlaysCollection;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
-import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Collection;
 
 import static org.lwjgl.opengl.GL11.glPopMatrix;
 import static org.lwjgl.opengl.GL11.glPushMatrix;
@@ -14,8 +14,7 @@ import static org.lwjgl.opengl.GL11.glPushMatrix;
  */
 public abstract class AbstractPanelOverlay extends ScaledOverlay implements OverlayParent {
 
-    protected List<ScaledOverlay> overlays = new ArrayList<ScaledOverlay>();
-    private final Queue<Runnable> deleteQueue = new LinkedBlockingQueue<>();
+    protected OverlaysCollection overlays = new OverlaysCollection(this);
 
     public AbstractPanelOverlay(double x, double y) {
         super(x, y);
@@ -35,63 +34,39 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
     @Override
     public synchronized void addOverlay(ScaledOverlay overlay) {
         overlays.add(overlay);
-        overlay.setParent(this);
     }
 
     @Override
     public synchronized void removeOverlay(ScaledOverlay overlay) {
-        if(overlays.remove(overlay)) {
-            overlay.setParent(null);
-        }
-
+        overlays.remove(overlay);
     }
 
     @Override
     public synchronized void update() {
         super.update();
-        for (ScaledOverlay overlay : overlays) {
-            overlay.update();
-        }
+        overlays.update();
     }
 
 
     @Override
     public void moveUp(ScaledOverlay overlay) {
-        int position = overlays.indexOf(overlay);
-
-        if (position != -1) {
-            overlays.remove(position);
-            overlays.add(position + 1, overlay);
-        }
+        overlays.moveUp(overlay);
     }
 
 
     @Override
     public void moveDown(ScaledOverlay overlay) {
-        int position = overlays.indexOf(overlay);
-
-        if (position != -1) {
-            overlays.remove(position);
-            overlays.add(position - 1, overlay);
-        }
+        overlays.moveDown(overlay);
     }
 
     @Override
     public void moveToFront(ScaledOverlay overlay) {
-
-        if (overlays.contains(overlay)) {
-            overlays.remove(overlay);
-            overlays.add(0, overlay);
-        }
+        overlays.moveToFront(overlay);
     }
 
     @Override
     public void moveToBackground(ScaledOverlay overlay) {
-
-        if (overlays.contains(overlay)) {
-            overlays.remove(overlay);
-            overlays.add(overlays.size(), overlay);
-        }
+        overlays.moveToBackground(overlay);
     }
 
     @Override
@@ -117,38 +92,47 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
 
     @Override
     protected boolean doMouseScroll(double mouseX, double mouseY, int scrollAmount) {
-        boolean flag = false;
-        for (ScaledOverlay overlay : overlays) {
-            flag |= overlay.onMouseScroll(mouseX, mouseY, scrollAmount);
-        }
-        return flag;
+        overlays.iterate(overlay -> !overlay.onMouseScroll(mouseX, mouseY, scrollAmount));
+        return true;
+    }
+
+    @Override
+    protected boolean doClick(int mouseX, int mouseY) {
+        overlays.iterate(overlay -> !overlay.onClick(mouseX, mouseY));
+        return true;
     }
 
     @Override
     protected void doDraw(double xPos, double yPos, double width, double height, float partialTick, int mouseX, int mouseY, boolean mouseInBounds) {
         glPushMatrix();
-        for (ScaledOverlay overlay : overlays) {
+        overlays.iterate(overlay -> {
             overlay.draw(partialTick, mouseX, mouseY);
-        }
+            return true;
+        });
         glPopMatrix();
     }
 
     @Override
     protected void doDrawText(double xPos, double yPos, double width, double height, float partialTick, int mouseX, int mouseY, boolean mouseInBounds) {
         glPushMatrix();
-        for (ScaledOverlay overlay : overlays) {
+        overlays.iterate(overlay -> {
             overlay.drawText(partialTick, mouseX, mouseY);
-        }
+            return true;
+        });
         glPopMatrix();
     }
 
     @Override
+    protected boolean doMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
+        overlays.downIterate(overlay ->
+                !overlay.onMouseDrag(lastMouseX, lastMouseY, mouseX, mouseY)
+        );
+        return true;
+    }
+
+    @Override
     public void doOnKey(char key, int code) {
-        for (ScaledOverlay overlay : overlays) {
-            if (overlay.onKey(key, code)) {
-                break;
-            }
-        }
+        overlays.iterate(overlay -> !overlay.onKey(key, code));
     }
 
     @Override
@@ -160,13 +144,35 @@ public abstract class AbstractPanelOverlay extends ScaledOverlay implements Over
 
     @Override
     public synchronized void clear() {
-        Iterator<ScaledOverlay> iterator = overlays.iterator();
+        overlays.clear();
+    }
 
-        while(iterator.hasNext()) {
-            ScaledOverlay overlay = iterator.next();
-            overlay.setParent(null);
-            iterator.remove();
-        }
+    @Override
+    public void onActivate() {
+        super.onActivate();
+        overlays.iterate(overlay -> {
+            overlay.onActivate();
+            return true;
+        });
+
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        overlays.iterate(overlay -> {
+            overlay.onDestroy();
+            return true;
+        });
+    }
+
+    @Override
+    public void onResize() {
+        super.onResize();
+        overlays.iterate(overlay -> {
+            overlay.onResize();
+            return true;
+        });
     }
 
     @Override

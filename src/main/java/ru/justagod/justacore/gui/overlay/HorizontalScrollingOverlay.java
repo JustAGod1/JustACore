@@ -140,29 +140,13 @@ public class HorizontalScrollingOverlay extends AbstractPanelOverlay {
 
     @Override
     protected boolean doMouseDrag(int lastMouseX, int lastMouseY, int mouseX, int mouseY) {
-        if (moveCarriage(lastMouseX, lastMouseY, mouseX, mouseY)) return true;
+        return moveCarriage(lastMouseX, lastMouseY, mouseX, mouseY) || super.doMouseDrag((int) (lastMouseX - getTranslationValue()), lastMouseY, (int) (mouseX - getTranslationValue()), mouseY);
 
-
-        for (int i = overlays.size() - 1; i >= 0; i--) {
-            ScaledOverlay overlay = overlays.get(i);
-
-
-            if (overlay.onMouseDrag((int) (lastMouseX - getTranslationValue()), lastMouseY, (int) (mouseX - getTranslationValue()), mouseY)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
     protected synchronized boolean doClick(int x, int y) {
-        for (int i = overlays.size() - 1; i >= 0; i--) {
-            ScaledOverlay overlay = overlays.get(i);
-            if (overlay.onClick((int) (x - getTranslationValue()), y)) {
-                return true;
-            }
-        }
-        return false;
+        return super.doClick((int) (x - getTranslationValue()), y);
     }
 
     @Override

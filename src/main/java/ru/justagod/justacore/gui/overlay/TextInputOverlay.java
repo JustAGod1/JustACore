@@ -40,68 +40,71 @@ public class TextInputOverlay extends ScaledOverlay  {
     public TextInputOverlay(double x, double y, double width, double height) {
         super(x, y, width, height);
         isEnabled = true;
-        keyboardListeners.add((overlay, key, keyCode) -> {
-            switch (key) {
-                case 1:
-                    setCursorPositionEnd();
-                    setSelectionPos(0);
-
-                case 22:
-                    if (isEnabled) {
-                        writeText(GuiScreen.getClipboardString());
-                    }
-
-
-                default:
-                    switch (keyCode) {
-                        case 14:
-                            if (GuiScreen.isCtrlKeyDown()) {
-                                if (isEnabled) {
-                                    deleteWords(-1);
-                                }
-                            } else if (isEnabled) {
-                                deleteFromCursor(-1);
-                            }
-
-                        case 199:
-                            if (GuiScreen.isShiftKeyDown()) {
-                                setSelectionPos(0);
-                            } else {
-                                setCursorPositionZero();
-                            }
-
-                        case 207:
-                            if (GuiScreen.isShiftKeyDown()) {
-                                setSelectionPos(text.size());
-                            } else {
-                                setCursorPositionEnd();
-                            }
-
-                        case 203:
-                            moveCursor(-1);
-                        case 205:
-                            moveCursor(1);
-                        case 211:
-                            if (GuiScreen.isCtrlKeyDown()) {
-                                if (isEnabled) {
-                                    deleteWords(1);
-                                }
-                            } else if (isEnabled) {
-                                deleteFromCursor(1);
-                            }
-
-                        default:
-                            if (ChatAllowedCharacters.isAllowedCharacter(key)) {
-                                if (isEnabled) {
-                                    writeText(Character.toString(key));
-                                }
-
-                            } else {
-                            }
-                    }
-            }
-        });
         setCursor(DrawHelper.CursorType.TEXT);
+    }
+
+    @Override
+    public void doOnKey(char key, int code) {
+        switch (key) {
+            case 1:
+                setCursorPositionEnd();
+                setSelectionPos(0);
+
+            case 22:
+                if (isEnabled) {
+                    writeText(GuiScreen.getClipboardString());
+                }
+
+
+            default:
+                switch (code) {
+                    case 14:
+                        if (GuiScreen.isCtrlKeyDown()) {
+                            if (isEnabled) {
+                                deleteWords(-1);
+                            }
+                        } else if (isEnabled) {
+                            deleteFromCursor(-1);
+                        }
+
+                    case 199:
+                        if (GuiScreen.isShiftKeyDown()) {
+                            setSelectionPos(0);
+                        } else {
+                            setCursorPositionZero();
+                        }
+
+                    case 207:
+                        if (GuiScreen.isShiftKeyDown()) {
+                            setSelectionPos(text.size());
+                        } else {
+                            setCursorPositionEnd();
+                        }
+
+                    case 203:
+                        moveCursor(-1);
+                    case 205:
+                        moveCursor(1);
+                    case 211:
+                        if (GuiScreen.isCtrlKeyDown()) {
+                            if (isEnabled) {
+                                deleteWords(1);
+                            }
+                        } else if (isEnabled) {
+                            deleteFromCursor(1);
+                        }
+
+                    default:
+                        if (ChatAllowedCharacters.isAllowedCharacter(key)) {
+                            if (isEnabled) {
+                                writeText(Character.toString(key));
+                            }
+
+                        } else {
+                        }
+                }
+        }
+
     }
 
     public boolean isEnabled() {
@@ -225,7 +228,7 @@ public class TextInputOverlay extends ScaledOverlay  {
     }
 
     @Override
-    protected Rect getRenderRect() {
+    public Rect getRenderRect() {
         return new Rect(getScaledX(), getScaledY(), getScaledX() + getScaledWidth(), getScaledY() + 10);
     }
 

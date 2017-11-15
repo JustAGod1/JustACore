@@ -13,7 +13,7 @@ public class FadeOutAnimation extends AbstractOverlayAnimator<ScaledOverlay> {
 
     @Override
     public void init(ScaledOverlay overlay) {
-        overlay.transformations.add(transformation);
+        overlay.getTransformations().add(transformation);
     }
 
     @Override

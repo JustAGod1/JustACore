@@ -2,12 +2,12 @@ package ru.justagod.justacore.gui.overlay;
 
 
 import org.lwjgl.opengl.GL11;
-import ru.justagod.justacore.gui.model.Color;
-import ru.justagod.justacore.gui.parent.AbstractPanelOverlay;
-import ru.justagod.justacore.gui.model.Dimensions;
 import ru.justagod.justacore.gui.helper.DrawHelper;
 import ru.justagod.justacore.gui.helper.MathHelper;
 import ru.justagod.justacore.gui.helper.ScissorHelper;
+import ru.justagod.justacore.gui.model.Color;
+import ru.justagod.justacore.gui.model.Dimensions;
+import ru.justagod.justacore.gui.parent.AbstractPanelOverlay;
 
 import static org.lwjgl.opengl.GL11.glColor4d;
 
@@ -75,7 +75,6 @@ public class VerticalScrollingOverlay extends AbstractPanelOverlay {
         double y = MathHelper.clampDouble((getScaledHeight() - height) * getCarriagePos() / (100 - getScaledHeight() / innerDimensions.getHeight() * 100), 0, getScaledHeight() - height);
 
 
-
         if (isFocused) {
             glColor4d(0.8, 0.8, 0.8, 1);
         } else {
@@ -134,25 +133,13 @@ public class VerticalScrollingOverlay extends AbstractPanelOverlay {
         if (moveCarriage(lastMouseX, lastMouseY, mouseX, mouseY)) return true;
 
 
-        for (int i = overlays.size() - 1; i >= 0; i--) {
-            ScaledOverlay overlay = overlays.get(i);
+        return super.doMouseDrag(lastMouseX, (int) (lastMouseY - getTranslationValue()), mouseX, (int) (mouseY - getTranslationValue()));
 
-
-            if (overlay.onMouseDrag(lastMouseX, (int) (lastMouseY - getTranslationValue()), mouseX, (int) (mouseY - getTranslationValue()))) {
-                return true;
-            }
-        }
-        return false;
     }
 
     @Override
     protected synchronized boolean doClick(int x, int y) {
-        for (int i = overlays.size() - 1; i >= 0; i--) {
-            ScaledOverlay overlay = overlays.get(i);
-            if (overlay.onClick(x, (int) (y - getTranslationValue()))) {
-                return true;
-            }
-        }
+        super.doClick(x, (int) (y - getTranslationValue()));
         return false;
     }
 

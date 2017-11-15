@@ -73,9 +73,8 @@ public class SimpleGui extends PichGui {
     private void generateNew(OverlayParent parent) {
         ColorOverlay o = new ColorOverlay(randomFloat(0, 100), randomFloat(0, 100), 10, 10, 1, randomFloat(0, 1), randomFloat(0, 1), randomFloat(0, 1));
 
-        o.dragListeners.add((scaledOverlay, from, to) -> {
+        o.getDragListeners().add((scaledOverlay, from, to) -> {
             Vector pos = scaledOverlay.getScaledPos().add(to.subtract(from));
-            scaledOverlay.setScaledPos(pos);
             ColorOverlay newO = new ColorOverlay(pos.getX(), pos.getY(), 10, 10, 1, randomFloat(0, 1), randomFloat(0, 1), randomFloat(0, 1));
 
             newO.addAnimator(new QueuedAnimation.Builder().appendDelay(40).appendRemove().build());

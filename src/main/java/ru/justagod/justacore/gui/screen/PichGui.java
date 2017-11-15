@@ -246,4 +246,15 @@ public class PichGui extends GuiScreen implements OverlayParent {
             this.pichGui = pichGui;
         }
     }
+
+    @Override
+    public String toString() {
+        return "PichGui{" +
+                "overlays=" + overlays +
+                ", pauseGame=" + pauseGame +
+                ", released=" + released +
+                ", lastMouseX=" + lastMouseX +
+                ", lastMouseY=" + lastMouseY +
+                "} " + super.toString();
+    }
 }

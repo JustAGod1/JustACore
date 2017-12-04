@@ -1,6 +1,5 @@
 package ru.justagod.justacore.gui.model;
 
-import javafx.util.Callback;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 

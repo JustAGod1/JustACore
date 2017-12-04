@@ -1,4 +1,4 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.common.button;
 
 
 import net.minecraft.client.resources.I18n;

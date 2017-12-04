@@ -1,7 +1,8 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.scrollable;
 
 import ru.justagod.justacore.gui.model.Color;
 import ru.justagod.justacore.gui.model.Dimensions;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 
 import java.util.ArrayList;

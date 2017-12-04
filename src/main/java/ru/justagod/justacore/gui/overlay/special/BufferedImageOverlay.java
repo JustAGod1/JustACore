@@ -1,9 +1,10 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.special;
 
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.util.MathHelper;
 import org.lwjgl.opengl.GL11;
 import ru.justagod.justacore.gui.helper.DrawHelper;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
 import java.awt.image.BufferedImage;
 

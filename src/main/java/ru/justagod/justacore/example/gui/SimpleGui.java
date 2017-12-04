@@ -1,12 +1,21 @@
 package ru.justagod.justacore.example.gui;
 
-import net.minecraft.client.gui.GuiButton;
+import ru.justagod.justacore.CommonProxy;
 import ru.justagod.justacore.gui.animation.MovingToAnimation;
 import ru.justagod.justacore.gui.animation.QueuedAnimation;
 import ru.justagod.justacore.gui.model.Color;
 import ru.justagod.justacore.gui.model.Dimensions;
 import ru.justagod.justacore.gui.model.Vector;
-import ru.justagod.justacore.gui.overlay.*;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
+import ru.justagod.justacore.gui.overlay.common.ColorOverlay;
+import ru.justagod.justacore.gui.overlay.common.TextInputOverlay;
+import ru.justagod.justacore.gui.overlay.common.TextOverlay;
+import ru.justagod.justacore.gui.overlay.common.button.ButtonOverlay;
+import ru.justagod.justacore.gui.overlay.common.button.ColorButtonOverlay;
+import ru.justagod.justacore.gui.overlay.scrollable.HorizontalScrollingOverlay;
+import ru.justagod.justacore.gui.overlay.special.BufferedImageOverlay;
+import ru.justagod.justacore.gui.overlay.special.ModelOverlay;
+import ru.justagod.justacore.gui.overlay.special.model.BlockModel;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 import ru.justagod.justacore.gui.screen.PichGui;
 
@@ -26,16 +35,22 @@ public class SimpleGui extends PichGui {
         setPauseGame(false);
         clear();
 
-        addOverlay(new ButtonOverlay(40, 40, 20, "Тык", () -> {
+        addOverlay(new ButtonOverlay(40, 40, 20, "scrolling", () -> {
             clear();
             scrollingExample();
         }));
 
+        addOverlay(new ButtonOverlay(40, 45, 20, "model", () -> {
+            clear();
+            modelExample();
+        }));
+
     }
 
-    @Override
-    protected void actionPerformed(GuiButton p_146284_1_) {
-        super.actionPerformed(p_146284_1_);
+    private void modelExample() {
+        ModelOverlay overlay = new ModelOverlay(50, 50, 25, 25, new BlockModel(CommonProxy.gui_block));
+        overlay.setScalePosMode(ScaledOverlay.ScalePosMode.CENTRALIZE);
+        addOverlay(overlay);
     }
 
     private void scrollingExample() {
@@ -43,7 +58,9 @@ public class SimpleGui extends PichGui {
         //scrollingOverlay.setScaleSizeMode(ScaledOverlay.ScaleSizeMode.HEIGHT_EQUAL_WIDTH);
         addOverlay(scrollingOverlay);
 
+
         TextOverlay o = new TextOverlay(10, 0, "Анимация");
+        o.setScalePosMode(ScaledOverlay.ScalePosMode.CENTRALIZE);
         addOverlay(o);
 
 

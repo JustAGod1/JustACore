@@ -1,4 +1,4 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.common;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiScreen;
@@ -7,6 +7,7 @@ import net.minecraft.util.MathHelper;
 import org.lwjgl.opengl.GL11;
 import ru.justagod.justacore.gui.helper.DrawHelper;
 import ru.justagod.justacore.gui.model.Rect;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.List;
 /**
  * Created by JustAGod on 22.10.17.
  */
-public class TextInputOverlay extends ScaledOverlay  {
+public class TextInputOverlay extends ScaledOverlay {
 
     private boolean isEnabled = true;
     private List<Character> text = new ArrayList<Character>();

@@ -1,4 +1,6 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.special;
+
+import ru.justagod.justacore.gui.overlay.common.TextOverlay;
 
 /**
  * Created by JustAGod on 15.10.17.
@@ -17,16 +19,13 @@ public class ExpirableTextOverlay extends TextOverlay {
     }
 
     private void startDeathThread(final long life) {
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(life);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                parent.removeOverlay(ExpirableTextOverlay.this);
+        Thread t = new Thread(() -> {
+            try {
+                Thread.sleep(life);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            parent.removeOverlay(ExpirableTextOverlay.this);
         });
         t.setName("Text overlay timer");
         t.setDaemon(true);

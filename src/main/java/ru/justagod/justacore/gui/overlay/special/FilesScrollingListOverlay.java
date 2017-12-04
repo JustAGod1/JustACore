@@ -1,8 +1,10 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.special;
 
 import javafx.util.Callback;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
+import ru.justagod.justacore.gui.overlay.common.button.ButtonOverlay;
+import ru.justagod.justacore.gui.overlay.common.button.CustomButtonOverlay;
 import ru.justagod.justacore.gui.parent.PanelOverlay;
 
 import java.io.File;

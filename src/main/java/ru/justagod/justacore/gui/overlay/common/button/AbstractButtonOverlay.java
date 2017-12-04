@@ -1,10 +1,11 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.common.button;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.PositionedSoundRecord;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
 import ru.justagod.justacore.gui.helper.DrawHelper;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
 /**
  * Created by JustAGod on 04.11.17.

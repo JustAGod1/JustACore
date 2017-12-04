@@ -1,4 +1,4 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.common;
 
 /**
  * Created by JustAGod on 16.10.17.

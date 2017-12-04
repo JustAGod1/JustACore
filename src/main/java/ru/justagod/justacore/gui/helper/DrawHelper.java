@@ -82,6 +82,23 @@ public final class DrawHelper {
         }
     }
 
+    public static void drawRect(double width, double height, Color color) {
+        bindColor(color);
+        drawRect(width, height);
+    }
+
+    public static void drawRect(double width, double height) {
+        glBindTexture(GL_TEXTURE_2D, -1);
+
+        Tessellator t =Tessellator.instance;
+        t.startDrawingQuads();
+        t.addVertex(0, 0, 0);
+        t.addVertex(width, 0, 0);
+        t.addVertex(width, height, 0);
+        t.addVertex(0, height, 0);
+        t.draw();
+    }
+
     public static void drawCircle(double step, boolean useTexture) {
 
         Tessellator t = Tessellator.instance;

@@ -4,6 +4,11 @@ package ru.justagod.justacore.gui.model;
  * Created by JustAGod on 07.11.17.
  */
 public class Color {
+
+    public static final Color RED = new Color(1, 0, 0);
+    public static final Color GREEN = new Color(0, 1, 0);
+    public static final Color BLUE = new Color(0, 0, 1);
+
     double red;
     double green;
     double blue;

@@ -8,7 +8,7 @@ import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Mouse;
 import ru.justagod.justacore.gui.helper.DrawHelper;
 import ru.justagod.justacore.gui.model.OverlaysCollection;
-import ru.justagod.justacore.gui.overlay.CenteredTextOverlay;
+import ru.justagod.justacore.gui.overlay.common.CenteredTextOverlay;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 
@@ -250,7 +250,6 @@ public class PichGui extends GuiScreen implements OverlayParent {
     @Override
     public String toString() {
         return "PichGui{" +
-                "overlays=" + overlays +
                 ", pauseGame=" + pauseGame +
                 ", released=" + released +
                 ", lastMouseX=" + lastMouseX +

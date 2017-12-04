@@ -1,6 +1,7 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.special;
 
 import net.minecraft.util.MathHelper;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
 /**
  * Created by JustAGod on 21.10.17.

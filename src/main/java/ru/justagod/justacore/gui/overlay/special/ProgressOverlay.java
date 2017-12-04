@@ -1,7 +1,8 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.special;
 
 import net.minecraft.client.renderer.Tessellator;
 import org.lwjgl.opengl.GL11;
+import ru.justagod.justacore.gui.overlay.Overlay;
 
 /**
  * Created by JustAGod on 15.10.17.

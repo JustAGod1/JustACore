@@ -1,7 +1,8 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.common;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.I18n;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
 /**
  * Created by JustAGod on 15.10.17.

@@ -1,4 +1,4 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.scrollable;
 
 import org.lwjgl.opengl.GL11;
 import ru.justagod.justacore.gui.helper.DrawHelper;

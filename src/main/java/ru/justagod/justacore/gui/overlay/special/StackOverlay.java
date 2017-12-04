@@ -1,9 +1,10 @@
-package ru.justagod.justacore.gui.overlay;
+package ru.justagod.justacore.gui.overlay.special;
 
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
 import org.lwjgl.opengl.GL11;
+import ru.justagod.justacore.gui.overlay.ScaledOverlay;
 
 import static org.lwjgl.opengl.GL11.*;
 

@@ -37,6 +37,8 @@ public abstract class ScaledOverlay extends Overlay {
     private List<KeyboardListener> keyboardListeners;
     private List<MouseDragListener> dragListeners;
     private List<MouseScrollingListener> scrollingListeners;
+    private List<MouseEnterListener> mouseEnterListeners;
+    private List<MouseLeaveListener> mouseLeaveListeners;
 
 
     protected double width;
@@ -84,6 +86,20 @@ public abstract class ScaledOverlay extends Overlay {
             transformations = new ArrayList<>();
         }
         return transformations;
+    }
+
+    public List<MouseEnterListener> getMouseEnterListeners() {
+        if (mouseEnterListeners == null) {
+            mouseEnterListeners = new ArrayList<>();
+        }
+        return mouseEnterListeners;
+    }
+
+    public List<MouseLeaveListener> getMouseLeaveListeners() {
+        if (mouseLeaveListeners == null) {
+            mouseLeaveListeners = new ArrayList<>();
+        }
+        return mouseLeaveListeners;
     }
 
     public List<MouseClickListener> getMouseDoubleClickListeners() {
@@ -344,10 +360,18 @@ public abstract class ScaledOverlay extends Overlay {
         this.height = height;
     }
 
-    protected void runTransformations() {
+    protected void runPreTransformations() {
         if (transformations != null) {
             for (Transformation transformation : transformations) {
                 transformation.preTransform(this);
+            }
+        }
+    }
+
+    protected void runPostTransformations() {
+        if (transformations != null) {
+            for (Transformation transformation : transformations) {
+                transformation.postTransform(this);
             }
         }
     }
@@ -398,6 +422,7 @@ public abstract class ScaledOverlay extends Overlay {
         glDisable(GL11.GL_CULL_FACE);
 
         final boolean flag = isDoScissor();
+        boolean before = isMouseInside;
         if (isMouseInside = isInMouseRect(mouseX, mouseY)) {
             if (mouseHoverListeners != null) {
 
@@ -411,7 +436,22 @@ public abstract class ScaledOverlay extends Overlay {
             }
 
         }
-        runTransformations();
+        if (!before && isMouseInside) {
+            if (mouseEnterListeners != null) {
+                for (MouseEnterListener listener : mouseEnterListeners) {
+                    listener.onMouseEnter(mouseX, mouseY, this);
+                    doMouseEnter(mouseX, mouseY);
+                }
+            }
+        } else if (before && !isMouseInside) {
+            if (mouseLeaveListeners != null) {
+                for (MouseLeaveListener listener : mouseLeaveListeners) {
+                    listener.onMouseLeft(mouseX, mouseY, this);
+                    doMouseLeft(mouseX, mouseY);
+                }
+            }
+        }
+        runPreTransformations();
         if (flag) {
             ScissorHelper.push();
             ScissorHelper.relativeScissor(getScaledX() / getScreenScaledWidth(), getScaledY() / getScreenScaledHeight(), getScaledWidth() / getScreenScaledWidth(), getScaledHeight() / getScreenScaledHeight());
@@ -419,6 +459,8 @@ public abstract class ScaledOverlay extends Overlay {
         }
 
         doDraw(getScaledX(), getScaledY(), getScaledWidth(), getScaledHeight(), partialTick, mouseX, mouseY, isInMouseRect(mouseX, mouseY));
+
+        runPostTransformations();
 
         GL11.glEnable(GL11.GL_CULL_FACE);
         if (flag) {
@@ -536,6 +578,7 @@ public abstract class ScaledOverlay extends Overlay {
         glDisable(GL11.GL_CULL_FACE);
 
         final boolean flag = isDoScissor();
+        boolean before = isMouseInside;
         if (isMouseInside = isPointInBounds(mouseX, mouseY)) {
             if (mouseHoverListeners != null) {
                 for (MouseHoverListener listener : mouseHoverListeners) {
@@ -547,7 +590,22 @@ public abstract class ScaledOverlay extends Overlay {
                 DrawHelper.bindCursor(cursor);
             }
         }
-        runTransformations();
+        if (!before && isMouseInside) {
+            if (mouseEnterListeners != null) {
+                for (MouseEnterListener listener : mouseEnterListeners) {
+                    listener.onMouseEnter(mouseX, mouseY, this);
+                    doMouseEnter(mouseX, mouseY);
+                }
+            }
+        } else if (before && !isMouseInside) {
+            if (mouseLeaveListeners != null) {
+                for (MouseLeaveListener listener : mouseLeaveListeners) {
+                    listener.onMouseLeft(mouseX, mouseY, this);
+                    doMouseLeft(mouseX, mouseY);
+                }
+            }
+        }
+        runPreTransformations();
         if (flag) {
             ScissorHelper.push();
             ScissorHelper.relativeScissor(getScaledX() / getScreenScaledWidth(), getScaledY() / getScreenScaledHeight(), getScaledWidth() / getScreenScaledWidth(), getScaledHeight() / getScreenScaledHeight());
@@ -556,10 +614,19 @@ public abstract class ScaledOverlay extends Overlay {
 
         doDrawText(getScaledX(), getScaledY(), getScaledWidth(), getScaledHeight(), partialTick, mouseX, mouseY, isInMouseRect(mouseX, mouseY));
 
+        runPostTransformations();
+
         GL11.glEnable(GL11.GL_CULL_FACE);
         if (flag) {
             ScissorHelper.pop();
         }
+
+    }
+
+    protected void doMouseLeft(int mouseX, int mouseY) {
+    }
+
+    protected void doMouseEnter(int mouseX, int mouseY) {
 
     }
 

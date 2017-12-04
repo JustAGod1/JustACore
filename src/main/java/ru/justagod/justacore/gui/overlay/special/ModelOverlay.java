@@ -1,7 +1,6 @@
 package ru.justagod.justacore.gui.overlay.special;
 
 import com.sun.istack.internal.NotNull;
-import net.minecraft.nbt.NBTTagCompound;
 import ru.justagod.justacore.gui.helper.DrawHelper;
 import ru.justagod.justacore.gui.model.Color;
 import ru.justagod.justacore.gui.model.Vector;
@@ -69,7 +68,6 @@ public class ModelOverlay extends ScaledOverlay {
         xRotation += delta.getX();
         yRotation -= delta.getY();
 
-        NBTTagCompound
 
         return true;
     }

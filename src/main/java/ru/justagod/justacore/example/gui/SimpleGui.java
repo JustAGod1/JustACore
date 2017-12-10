@@ -1,6 +1,5 @@
 package ru.justagod.justacore.example.gui;
 
-import ru.justagod.justacore.CommonProxy;
 import ru.justagod.justacore.gui.animation.MovingToAnimation;
 import ru.justagod.justacore.gui.animation.QueuedAnimation;
 import ru.justagod.justacore.gui.model.Color;
@@ -14,8 +13,6 @@ import ru.justagod.justacore.gui.overlay.common.button.ButtonOverlay;
 import ru.justagod.justacore.gui.overlay.common.button.ColorButtonOverlay;
 import ru.justagod.justacore.gui.overlay.scrollable.HorizontalScrollingOverlay;
 import ru.justagod.justacore.gui.overlay.special.BufferedImageOverlay;
-import ru.justagod.justacore.gui.overlay.special.ModelOverlay;
-import ru.justagod.justacore.gui.overlay.special.model.BlockModel;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 import ru.justagod.justacore.gui.screen.PichGui;
 
@@ -40,18 +37,11 @@ public class SimpleGui extends PichGui {
             scrollingExample();
         }));
 
-        addOverlay(new ButtonOverlay(40, 45, 20, "model", () -> {
-            clear();
-            modelExample();
-        }));
+
 
     }
 
-    private void modelExample() {
-        ModelOverlay overlay = new ModelOverlay(50, 50, 25, 25, new BlockModel(CommonProxy.gui_block));
-        overlay.setScalePosMode(ScaledOverlay.ScalePosMode.CENTRALIZE);
-        addOverlay(overlay);
-    }
+
 
     private void scrollingExample() {
         final HorizontalScrollingOverlay scrollingOverlay = new HorizontalScrollingOverlay(2, 50, 96, 48, new Dimensions(2000, 2000), new Color(0.2, 0.2, 0.2, 0.2));

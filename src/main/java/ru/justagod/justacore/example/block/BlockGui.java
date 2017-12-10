@@ -7,13 +7,15 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 import ru.justagod.justacore.example.gui.SimpleGui;
+import ru.justagod.justacore.initialization.annotation.RegistryObject;
 
 /**
  * Created by JustAGod on 03.11.17.
  */
-public class GuiBlock extends Block {
+@RegistryObject
+public class BlockGui extends Block {
 
-    public GuiBlock() {
+    public BlockGui() {
         super(Material.iron);
     }
 

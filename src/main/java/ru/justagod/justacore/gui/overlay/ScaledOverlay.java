@@ -81,6 +81,7 @@ public abstract class ScaledOverlay extends Overlay {
         this.scaleSize = scaleSize;
     }
 
+    @SuppressWarnings("unused")
     public List<Transformation> getTransformations() {
         if (transformations == null) {
             transformations = new ArrayList<>();
@@ -88,6 +89,7 @@ public abstract class ScaledOverlay extends Overlay {
         return transformations;
     }
 
+    @SuppressWarnings("unused")
     public List<MouseEnterListener> getMouseEnterListeners() {
         if (mouseEnterListeners == null) {
             mouseEnterListeners = new ArrayList<>();
@@ -95,6 +97,7 @@ public abstract class ScaledOverlay extends Overlay {
         return mouseEnterListeners;
     }
 
+    @SuppressWarnings("unused")
     public List<MouseLeaveListener> getMouseLeaveListeners() {
         if (mouseLeaveListeners == null) {
             mouseLeaveListeners = new ArrayList<>();
@@ -102,6 +105,7 @@ public abstract class ScaledOverlay extends Overlay {
         return mouseLeaveListeners;
     }
 
+    @SuppressWarnings("unused")
     public List<MouseClickListener> getMouseDoubleClickListeners() {
         if (mouseDoubleClickListeners == null) {
             mouseDoubleClickListeners = new ArrayList<>();
@@ -109,6 +113,7 @@ public abstract class ScaledOverlay extends Overlay {
         return mouseDoubleClickListeners;
     }
 
+    @SuppressWarnings("unused")
     public List<MouseClickListener> getMouseClickListeners() {
         if (mouseClickListeners == null) {
             mouseClickListeners = new ArrayList<>();
@@ -116,6 +121,7 @@ public abstract class ScaledOverlay extends Overlay {
         return mouseClickListeners;
     }
 
+    @SuppressWarnings("unused")
     public List<MouseHoverListener> getMouseHoverListeners() {
         if (mouseHoverListeners == null) {
             mouseHoverListeners = new ArrayList<>();
@@ -123,6 +129,7 @@ public abstract class ScaledOverlay extends Overlay {
         return mouseHoverListeners;
     }
 
+    @SuppressWarnings("unused")
     public List<KeyboardListener> getKeyboardListeners() {
         if (keyboardListeners == null) {
             keyboardListeners = new ArrayList<>();
@@ -130,6 +137,7 @@ public abstract class ScaledOverlay extends Overlay {
         return keyboardListeners;
     }
 
+    @SuppressWarnings("unused")
     public List<MouseDragListener> getDragListeners() {
         if (dragListeners == null) {
             dragListeners = new ArrayList<>();
@@ -137,6 +145,7 @@ public abstract class ScaledOverlay extends Overlay {
         return dragListeners;
     }
 
+    @SuppressWarnings("unused")
     public List<MouseScrollingListener> getScrollingListeners() {
         if (scrollingListeners == null) {
             scrollingListeners = new ArrayList<>();
@@ -298,10 +307,12 @@ public abstract class ScaledOverlay extends Overlay {
         }
     }
 
+    @SuppressWarnings("unused")
     public boolean isFocused() {
         return isFocused;
     }
 
+    @SuppressWarnings("unused")
     public ScalePosMode getScalePosMode() {
         return scalePosMode;
     }
@@ -311,6 +322,7 @@ public abstract class ScaledOverlay extends Overlay {
         recalculateStatements();
     }
 
+    @SuppressWarnings("unused")
     public ScaleSizeMode getScaleSizeMode() {
         return scaleSizeMode;
     }
@@ -623,10 +635,10 @@ public abstract class ScaledOverlay extends Overlay {
 
     }
 
-    protected void doMouseLeft(int mouseX, int mouseY) {
+    protected void doMouseLeft(@SuppressWarnings("unused")int mouseX, @SuppressWarnings("unused")int mouseY) {
     }
 
-    protected void doMouseEnter(int mouseX, int mouseY) {
+    protected void doMouseEnter(@SuppressWarnings("unused")int mouseX, @SuppressWarnings("unused")int mouseY) {
 
     }
 
@@ -722,7 +734,7 @@ public abstract class ScaledOverlay extends Overlay {
 
 
 
-    protected CursorType getCursorType(int mouseX, int mouseY) {
+    protected CursorType getCursorType(@SuppressWarnings("unused") int mouseX, @SuppressWarnings("unused") int mouseY) {
         return cursor;
     }
 
@@ -730,6 +742,7 @@ public abstract class ScaledOverlay extends Overlay {
         return new Dimensions(getScaledWidth(), getScaledHeight());
     }
 
+    // TODO: 04.12.17 Курсоры!
     public CursorType getCursor() {
         return cursor;
     }
@@ -738,17 +751,16 @@ public abstract class ScaledOverlay extends Overlay {
         this.cursor = cursor;
     }
 
+    @SuppressWarnings("unused")
     public void toFront() {
         parent.moveToFront(this);
     }
 
+    @SuppressWarnings("unused")
     public void toBackground() {
         parent.moveToBackground(this);
     }
 
-    public boolean isMouseInside() {
-        return isMouseInside;
-    }
 
     public enum ScaleSizeMode {
         WIDTH_EQUAL_HEIGHT, HEIGHT_EQUAL_WIDTH, NORMAL, DONT_SCALE_WIDTH, DONT_SCALE_HEIGHT

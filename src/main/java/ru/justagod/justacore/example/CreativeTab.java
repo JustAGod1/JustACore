@@ -1,8 +1,8 @@
 package ru.justagod.justacore.example;
 
 import net.minecraft.creativetab.CreativeTabs;
+import net.minecraft.init.Items;
 import net.minecraft.item.Item;
-import ru.justagod.justacore.CommonProxy;
 
 /**
  * Created by JustAGod on 03.11.17.
@@ -15,6 +15,6 @@ public class CreativeTab extends CreativeTabs {
 
     @Override
     public Item getTabIconItem() {
-        return Item.getItemFromBlock(CommonProxy.gui_block);
+        return Items.blaze_rod;
     }
 }

@@ -16,25 +16,26 @@ import java.util.Scanner;
 @Mod(modid = "jac", name = "JustACore", version = "0.1")
 public class Main {
 
+    private InitHandler initHandler = new InitHandler(this);
 
     @EventHandler
     public void init(FMLInitializationEvent e) {
-        InitHandler.init(this, e);
+        initHandler.init(e);
     }
 
     @EventHandler
     public void init(FMLPreInitializationEvent e) {
-        InitHandler.preInit(this, e);
+        initHandler.preInit(e);
     }
 
     @EventHandler
     public void init(FMLPostInitializationEvent e) {
-        InitHandler.postInit(this, e);
+        initHandler.postInit(e);
     }
 
     @EventHandler
     public void init(FMLConstructionEvent e) {
-        InitHandler.start(this, e);
+        initHandler.start(e);
     }
 
     public static void main(String[] args) {

@@ -7,12 +7,13 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 import ru.justagod.justacore.example.gui.SimpleGui;
+import ru.justagod.justacore.initialization.annotation.InstnaceFactory;
 import ru.justagod.justacore.initialization.annotation.RegistryObject;
 
 /**
  * Created by JustAGod on 03.11.17.
  */
-@RegistryObject
+@RegistryObject(registryId = "hello")
 public class BlockGui extends Block {
 
     public BlockGui() {
@@ -22,6 +23,11 @@ public class BlockGui extends Block {
     @Override
     public IIcon getIcon(int p_149691_1_, int p_149691_2_) {
         return Blocks.bookshelf.getIcon(p_149691_1_, p_149691_2_);
+    }
+
+    @InstnaceFactory
+    public static BlockGui create() {
+        return new BlockGui();
     }
 
     @Override

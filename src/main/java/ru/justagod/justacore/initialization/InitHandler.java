@@ -14,6 +14,7 @@ import cpw.mods.fml.relauncher.Side;
 import joptsimple.internal.Strings;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
@@ -22,15 +23,14 @@ import org.apache.logging.log4j.Logger;
 import ru.justagod.justacore.initialization.annotation.*;
 import ru.justagod.justacore.initialization.data.Data;
 import ru.justagod.justacore.initialization.data.ItemRenderRegistryData;
+import ru.justagod.justacore.initialization.data.RegistryContainerData;
 import ru.justagod.justacore.initialization.data.RegistryData;
 import ru.justagod.justacore.initialization.obj.ModModule;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,15 +42,25 @@ public class InitHandler {
 
     private static final Logger logger = LogManager.getLogger("InitHandler");
 
-    private static final Pattern pattern = Pattern.compile("[A-Z]");
-    private static final Set<RegistryData> registryClasses = new LinkedHashSet<>();
-    private static final Set<RegistryData> tileClasses = new LinkedHashSet<>();
-    private static final Set<Data> moduleClasses = new LinkedHashSet<>();
-    private static final Set<ItemRenderRegistryData> itemRenderClasses = new LinkedHashSet<>();
+    private final Object mod;
+
+    private final Pattern pattern = Pattern.compile("[A-Z]");
+    private final Set<RegistryData> registryClasses = new LinkedHashSet<>();
+    private final Set<RegistryData> tileClasses = new LinkedHashSet<>();
+    private final Set<Data> moduleClasses = new LinkedHashSet<>();
+    private final Set<ItemRenderRegistryData> itemRenderClasses = new LinkedHashSet<>();
+    private final Set<RegistryContainerData> containerClasses = new LinkedHashSet<>();
+
+    private final Set<String> softDependencies = new LinkedHashSet<>();
+    private final Set<String> hardDependencies = new LinkedHashSet<>();
 
     private static final List<ModModule> modules = new LinkedList<>();
 
-    public static void start(Object mod, FMLConstructionEvent event) {
+    public InitHandler(Object mod) {
+        this.mod = mod;
+    }
+
+    public void start(FMLConstructionEvent event) {
         SetMultimap<String, ASMData> data = event.getASMHarvestedData().getAnnotationsFor(FMLCommonHandler.instance().findContainerFor(mod));
 
         queryModules(data.get(IntegrationModule.class.getName()));
@@ -60,7 +70,7 @@ public class InitHandler {
 
     }
 
-    public static void preInit(Object mod, FMLPreInitializationEvent e) {
+    public void preInit(FMLPreInitializationEvent e) {
         for (RegistryData registryClass : registryClasses) {
             if (registryClass.dependencies.length > 0) {
                 boolean flag = false;
@@ -93,7 +103,22 @@ public class InitHandler {
                 if (o instanceof Item) {
                     GameRegistry.registerItem((Item) o, id);
                 } else if (o instanceof Block) {
-                    GameRegistry.registerBlock((Block) o, id);
+                    if (!Strings.isNullOrEmpty(registryClass.itemBlock)) {
+                        String nameItemBlock = registryClass.itemBlock;
+                        try {
+                            Class classItemBlock = Class.forName(nameItemBlock);
+                            if (!ItemBlock.class.isAssignableFrom(classItemBlock)) {
+                                logger.warn("Class " + nameItemBlock + " must extends ItemBlock");
+                                continue;
+                            }
+                            GameRegistry.registerBlock((Block) o, classItemBlock, id);
+                        } catch (ClassNotFoundException e1) {
+                            logger.error(e1);
+                            continue;
+                        }
+                    } else {
+                        GameRegistry.registerBlock((Block) o, id);
+                    }
                 } else {
                     logger.warn("Not supported class " + registryClass.clazz);
                 }
@@ -138,6 +163,30 @@ public class InitHandler {
                     logger.warn("Expected: TileEntity actual: " + tile.clazz);
                 }
             }
+        }
+        for (RegistryContainerData container : containerClasses) {
+            Object o;
+            if (container.dependencies.length > 0) {
+                boolean flag = false;
+                for (String dependency : container.dependencies) {
+                    if (!Loader.isModLoaded(dependency)) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if (flag) continue;
+            }
+            Class clazz;
+            try {
+
+                clazz = Class.forName(container.clazz);
+            } catch (ClassNotFoundException e1) {
+                logger.warn("Can't find registry container class");
+                logger.error(e1);
+                continue;
+            }
+            registerFields(clazz);
+
         }
         if (e.getSide() == Side.CLIENT) {
             for (ItemRenderRegistryData itemRender : itemRenderClasses) {
@@ -202,19 +251,68 @@ public class InitHandler {
         }
     }
 
-    public static void init(Object mod, FMLInitializationEvent e) {
+
+
+    public void init(FMLInitializationEvent e) {
         for (ModModule module : modules) {
             module.onInit(e);
         }
     }
 
-    public static void postInit(Object mod, FMLPostInitializationEvent e) {
+    public void postInit(FMLPostInitializationEvent e) {
         for (ModModule module : modules) {
             module.onPostInit(e);
         }
     }
 
-    private static void callCustomRegistry(Object o) throws Exception {
+    private void registerFields(Class clazz) {
+        for (Field field : clazz.getFields()) {
+            if (!Modifier.isStatic(field.getModifiers())) continue;
+            Class fieldClazz = field.getDeclaringClass();
+            try {
+                if (Item.class.isAssignableFrom(fieldClazz) || Block.class.isAssignableFrom(fieldClazz)) {
+                    if (!field.isAnnotationPresent(RegistryExcept.class)) {
+                        String id;
+                        if (field.isAnnotationPresent(RegistrySpecial.class)) {
+                            id = field.getAnnotation(RegistrySpecial.class).name();
+                        } else {
+                            id = field.getName();
+                        }
+                        Object o = field.get(clazz);
+                        if (o != null) {
+                            if (o instanceof Item) {
+                                GameRegistry.registerItem((Item) o, id);
+                            } else if (o instanceof Block) {
+                                if (field.isAnnotationPresent(RegistryBlockSpecial.class)) {
+                                    String nameItemBlock = field.getAnnotation(RegistryBlockSpecial.class).classItemBlock();
+                                    try {
+                                        Class classItemBlock = Class.forName(nameItemBlock);
+                                        if (!ItemBlock.class.isAssignableFrom(classItemBlock)) {
+                                            logger.warn("Class " + nameItemBlock + " must extends ItemBlock");
+                                            continue;
+                                        }
+                                        GameRegistry.registerBlock((Block) o, classItemBlock, id);
+                                    } catch (ClassNotFoundException e) {
+                                        logger.error(e);
+                                        continue;
+                                    }
+                                } else {
+                                    GameRegistry.registerBlock((Block) o, id);
+                                }
+                            }
+                        } else {
+                            logger.warn("Field " + field.getName() + " is null");
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                logger.warn("Can't register field " + field.getName());
+                logger.error(e);
+            }
+        }
+    }
+
+    private void callCustomRegistry(Object o) throws Exception {
         Class clazz = o.getClass();
 
         for (Method method : clazz.getMethods()) {
@@ -237,7 +335,7 @@ public class InitHandler {
                 if (!Modifier.isStatic(method.getModifiers()) || !Modifier.isPublic(method.getModifiers())) {
                     throw new InvalidModifiersException(className, method.getName());
                 }
-                if (!clazz.isAssignableFrom(method.getReturnType())) {
+                if (!method.getReturnType().isAssignableFrom(clazz)) {
                     throw new IllegalReturnTypeException(className, clazz.getName());
                 }
                 if (method.getParameterCount() > 0) throw new InvalidParametersException(className, method.getName());
@@ -248,11 +346,13 @@ public class InitHandler {
         return clazz.newInstance();
     }
 
-    private static void queryTiles(Set<ASMData> data) {
+    private void queryTiles(Set<ASMData> data) {
         for (ASMData datum : data) {
             String[] dependencies = (String[]) datum.getAnnotationInfo().get("dependencies");
             String id = datum.getAnnotationInfo().get("registryName") == null ? "" : (String) datum.getAnnotationInfo().get("registryName");
             boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
+
+            softDependencies.addAll(Arrays.asList(dependencies));
 
             if (Strings.isNullOrEmpty(id) && !customRegistry) {
                 id = datum.getClassName();
@@ -268,22 +368,31 @@ public class InitHandler {
         }
     }
 
-    private static void queryModules(Set<ASMData> data) {
+    private void queryModules(Set<ASMData> data) {
         for (ASMData datum : data) {
             String[] dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new String[]{} : (String[]) datum.getAnnotationInfo().get("dependencies");
+            boolean mandatory = datum.getAnnotationInfo().get("isMandatory") == null ? false : (Boolean) datum.getAnnotationInfo().get("isMandatory");
+
+            if (mandatory) {
+                hardDependencies.addAll(Arrays.asList(dependencies));
+            } else {
+                softDependencies.addAll(Arrays.asList(dependencies));
+            }
 
             Data moduleData = new Data(dependencies, datum.getClassName());
             moduleClasses.add(moduleData);
         }
     }
 
-    private static void queryRegistryObjects(Set<ASMData> data) {
+    private void queryRegistryObjects(Set<ASMData> data) {
 
         for (ASMData datum : data) {
             String[] dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new String[]{} : (String[]) datum.getAnnotationInfo().get("dependencies");
             String id = datum.getAnnotationInfo().get("registryId") == null ? "" : (String) datum.getAnnotationInfo().get("registryId");
             String itemBlock = datum.getAnnotationInfo().get("itemBlock") == null ? "" : (String) datum.getAnnotationInfo().get("itemBlock");
             Boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
+
+            softDependencies.addAll(Arrays.asList(dependencies));
 
             if (Strings.isNullOrEmpty(id) && !customRegistry) {
                 id = datum.getClassName().substring(datum.getClassName().lastIndexOf(".") + 1);
@@ -299,7 +408,7 @@ public class InitHandler {
         }
     }
 
-    public static String transformName(String name) throws InvalidRegistryNameException {
+    public String transformName(String name) throws InvalidRegistryNameException {
         final String nameCopy = name;
         name = name.replace("Item", "");
         name = name.replace("Block", "");
@@ -322,7 +431,19 @@ public class InitHandler {
         return name.toLowerCase();
     }
 
-    public static void queryItemRenders(Set<ASMData> data) {
+    private void queryContainers(Set<ASMData> data) {
+        for (ASMData datum : data) {
+            String[] dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new String[]{} : (String[]) datum.getAnnotationInfo().get("dependencies");
+            String id = datum.getAnnotationInfo().get("registryId") == null ? "" : (String) datum.getAnnotationInfo().get("registryId");
+            Boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
+
+            softDependencies.addAll(Arrays.asList(dependencies));
+
+            containerClasses.add(new RegistryContainerData(dependencies, datum.getClassName(), customRegistry));
+        }
+    }
+
+    private void queryItemRenders(Set<ASMData> data) {
         for (ASMData datum : data) {
             String item = datum.getAnnotationInfo().get("itemName") == null ? "" : (String) datum.getAnnotationInfo().get("itemName");
             boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
@@ -330,4 +451,5 @@ public class InitHandler {
             itemRenderClasses.add(new ItemRenderRegistryData(customRegistry, item, datum.getClassName()));
         }
     }
+
 }

@@ -8,13 +8,10 @@ import java.lang.annotation.Target;
 /**
  * Created by JustAGod on 10.12.17.
  */
-@Target(value = {ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
-public @interface IntegrationModule {
+@Retention(value = RetentionPolicy.RUNTIME)
+@Target(value = ElementType.FIELD)
+public @interface RegistrySpecial {
 
-    @SuppressWarnings("unused")
-    String[] dependencies() default {};
+    String name();
 
-    @SuppressWarnings("unused")
-    boolean isMandatory() default false;
 }

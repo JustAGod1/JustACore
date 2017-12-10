@@ -12,4 +12,12 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RegistryObjectsContainer {
 
+    @SuppressWarnings("unused")
+    String[] dependencies() default {};
+
+    @SuppressWarnings("unused")
+    String registryId() default  "";
+
+    @SuppressWarnings("unused")
+    boolean customRegistry() default false;
 }

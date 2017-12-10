@@ -1,8 +1,8 @@
 package ru.justagod.justacore.initialization;
 
+import com.google.common.collect.SetMultimap;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.discovery.ASMDataTable;
 import cpw.mods.fml.common.discovery.ASMDataTable.ASMData;
 import cpw.mods.fml.common.event.FMLConstructionEvent;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
@@ -51,12 +51,12 @@ public class InitHandler {
     private static final List<ModModule> modules = new LinkedList<>();
 
     public static void start(Object mod, FMLConstructionEvent event) {
-        ASMDataTable data = event.getASMHarvestedData();//event.getASMHarvestedData().getAnnotationsFor(FMLCommonHandler.instance().findContainerFor(mod));
+        SetMultimap<String, ASMData> data = event.getASMHarvestedData().getAnnotationsFor(FMLCommonHandler.instance().findContainerFor(mod));
 
-        queryModules(data.getAll(IntegrationModule.class.getName()));
-        queryRegistryObjects(data.getAll(RegistryObject.class.getName()));
-        queryItemRenders(data.getAll(ItemRenderRegistryObject.class.getName()));
-        queryTiles(data.getAll(TileRegistryObject.class.getName()));
+        queryModules(data.get(IntegrationModule.class.getName()));
+        queryRegistryObjects(data.get(RegistryObject.class.getName()));
+        queryItemRenders(data.get(ItemRenderRegistryObject.class.getName()));
+        queryTiles(data.get(TileRegistryObject.class.getName()));
 
     }
 
@@ -251,8 +251,8 @@ public class InitHandler {
     private static void queryTiles(Set<ASMData> data) {
         for (ASMData datum : data) {
             String[] dependencies = (String[]) datum.getAnnotationInfo().get("dependencies");
-            String id = (String) datum.getAnnotationInfo().get("registryName");
-            boolean customRegistry = (Boolean) datum.getAnnotationInfo().get("customRegistry");
+            String id = datum.getAnnotationInfo().get("registryName") == null ? "" : (String) datum.getAnnotationInfo().get("registryName");
+            boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
             if (Strings.isNullOrEmpty(id) && !customRegistry) {
                 id = datum.getClassName();
@@ -270,7 +270,7 @@ public class InitHandler {
 
     private static void queryModules(Set<ASMData> data) {
         for (ASMData datum : data) {
-            String[] dependencies = (String[]) datum.getAnnotationInfo().get("dependencies");
+            String[] dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new String[]{} : (String[]) datum.getAnnotationInfo().get("dependencies");
 
             Data moduleData = new Data(dependencies, datum.getClassName());
             moduleClasses.add(moduleData);
@@ -324,8 +324,8 @@ public class InitHandler {
 
     public static void queryItemRenders(Set<ASMData> data) {
         for (ASMData datum : data) {
-            String item = (String) datum.getAnnotationInfo().get("itemName");
-            boolean customRegistry = (Boolean) datum.getAnnotationInfo().get("customRegistry");
+            String item = datum.getAnnotationInfo().get("itemName") == null ? "" : (String) datum.getAnnotationInfo().get("itemName");
+            boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
             itemRenderClasses.add(new ItemRenderRegistryData(customRegistry, item, datum.getClassName()));
         }

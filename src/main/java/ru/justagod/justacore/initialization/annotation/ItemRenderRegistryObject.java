@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
 public @interface ItemRenderRegistryObject {
 
     @SuppressWarnings("unused")
-    String itemName();
+    String[] items();
 
     @SuppressWarnings("unused")
     boolean customRegistry() default false;

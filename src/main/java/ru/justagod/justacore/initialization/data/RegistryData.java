@@ -1,8 +1,11 @@
 package ru.justagod.justacore.initialization.data;
 
+import ru.justagod.justacore.initialization.annotation.RegistryObjectsContainer;
+
 /**
  * Created by JustAGod on 10.12.17.
  */
+@RegistryObjectsContainer
 public class RegistryData extends Data {
 
     public final String registryId;

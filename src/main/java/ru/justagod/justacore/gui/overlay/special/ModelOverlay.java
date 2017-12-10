@@ -1,6 +1,5 @@
 package ru.justagod.justacore.gui.overlay.special;
 
-import com.sun.istack.internal.NotNull;
 import ru.justagod.justacore.gui.helper.DrawHelper;
 import ru.justagod.justacore.gui.model.Color;
 import ru.justagod.justacore.gui.model.Vector;
@@ -19,21 +18,21 @@ public class ModelOverlay extends ScaledOverlay {
     private double xRotation = 0;
     private double yRotation = 0;
 
-    public ModelOverlay(double x, double y, @NotNull Model model) {
+    public ModelOverlay(double x, double y,  Model model) {
         super(x, y);
         assert model != null;
         this.model = model;
         setDoScissor(true);
     }
 
-    public ModelOverlay(double x, double y, double width, double height, @NotNull Model model) {
+    public ModelOverlay(double x, double y, double width, double height, Model model) {
         super(x, y, width, height);
         assert model != null;
         this.model = model;
         setDoScissor(true);
     }
 
-    public ModelOverlay(double x, double y, double width, double height, boolean scalePosition, boolean scaleSize, @NotNull Model model) {
+    public ModelOverlay(double x, double y, double width, double height, boolean scalePosition, boolean scaleSize,  Model model) {
         super(x, y, width, height, scalePosition, scaleSize);
         assert model != null;
         this.model = model;

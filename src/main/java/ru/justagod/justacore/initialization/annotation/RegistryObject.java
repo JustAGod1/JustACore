@@ -6,7 +6,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Эту анотацию писать над типом Block или Item. Автоматически будет создан экземпляр
+ * и зарегистрирован под именем взятым из названия типа т.е. если название ItemBlackSkirt,
+ * то зарегистрирован он будет под именем black_skirt. Если хотите какое то свое имя укажите
+ * его в {@link #registryId()}
+ * @author JustAGod
  */
 @Target(value = {ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
@@ -18,6 +22,11 @@ public @interface RegistryObject {
     @SuppressWarnings("unused")
     String registryId() default  "";
 
+
+    /**
+     * @return искать ли метод с аннтоцией {@link CustomRegistry} в которой вы сами зарегистрируете
+     * предмет/блок
+     */
     @SuppressWarnings("unused")
     boolean customRegistry() default false;
 

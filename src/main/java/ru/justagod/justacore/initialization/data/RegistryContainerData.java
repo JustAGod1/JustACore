@@ -3,7 +3,8 @@ package ru.justagod.justacore.initialization.data;
 import java.util.ArrayList;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Внутреняя кухня
+ * @author JustAGod
  */
 public class RegistryContainerData extends Data {
 

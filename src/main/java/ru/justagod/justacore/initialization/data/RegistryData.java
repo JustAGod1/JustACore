@@ -5,7 +5,8 @@ import ru.justagod.justacore.initialization.annotation.RegistryObjectsContainer;
 import java.util.ArrayList;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Внутреняя кухня
+ * @author JustAGod
  */
 @RegistryObjectsContainer
 public class RegistryData extends Data {

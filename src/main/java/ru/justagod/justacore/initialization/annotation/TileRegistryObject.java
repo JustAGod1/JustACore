@@ -6,7 +6,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Писать над TileEntity.
+ * Автоматически зарегистрирует по такому же методу как и {@link RegistryObject}
+ * @author JustAGod
  */
 @Target(value = {ElementType.TYPE})
 @Retention(value = RetentionPolicy.RUNTIME)

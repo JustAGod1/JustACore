@@ -5,7 +5,8 @@ import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Смотри {@link ru.justagod.justacore.initialization.annotation.Module}
+ * @author JustAGod
  */
 public interface ModModule {
 

@@ -1,7 +1,8 @@
 package ru.justagod.justacore.initialization.data;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Внутреняя кухня
+ * @author JustAGod
  */
 public class ItemRenderRegistryData {
 

@@ -11,7 +11,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 /**
- * Created by JustAGod on 12.12.17.
+ * Внутреняя кухня
+ * @author JustAGod
  */
 public class StaticModModule implements ModModule {
 
@@ -57,6 +58,7 @@ public class StaticModModule implements ModModule {
                 }
             }
         }
+        Preconditions.checkArgument(onPreInit != null || onInit != null ||  onPostInit != null, "You have to specify at least one event handler");
     }
 
     @Override

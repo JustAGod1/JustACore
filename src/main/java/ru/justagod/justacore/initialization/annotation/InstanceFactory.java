@@ -6,7 +6,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Писать над статическими, можно не публичными методами, без параметров.
+ * Метод должен возвращать экземпляр класса. Используется всегда когда нужно создать экземпляр.
+ * @author JustAGod
  */
 @Target(value = {ElementType.METHOD})
 @Retention(value = RetentionPolicy.RUNTIME)

@@ -1,5 +1,6 @@
 package ru.justagod.justacore.initialization;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.SetMultimap;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -24,7 +25,10 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import ru.justagod.justacore.initialization.annotation.*;
-import ru.justagod.justacore.initialization.data.*;
+import ru.justagod.justacore.initialization.data.ItemRenderRegistryData;
+import ru.justagod.justacore.initialization.data.ModuleData;
+import ru.justagod.justacore.initialization.data.RegistryContainerData;
+import ru.justagod.justacore.initialization.data.RegistryData;
 import ru.justagod.justacore.initialization.obj.ModModule;
 import ru.justagod.justacore.initialization.obj.StaticModModule;
 
@@ -33,20 +37,24 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Чтобы инициализатор работал корректно вам нужно следовать шаблону
+ * который представлен в классе {@link ru.justagod.justacore.Main}
+ * @author JustAGod
  */
 @SuppressWarnings("unused")
 public class InitHandler {
 
     private static final Logger logger = LogManager.getLogger("InitHandler");
 
+    /**
+     * Просто чтобы отлавливать ошибки
+     */
+    private int stage = 0;
+
     private final Object mod;
 
-    private final Pattern pattern = Pattern.compile("[A-Z]");
     private final Set<RegistryData> registryClasses = new LinkedHashSet<>();
     private final Set<RegistryData> tileClasses = new LinkedHashSet<>();
     private final Set<ModuleData> moduleClasses = new LinkedHashSet<>();
@@ -63,6 +71,8 @@ public class InitHandler {
     }
 
     public void start(FMLConstructionEvent event) {
+        Preconditions.checkArgument(stage != 0, "You have to call this method first");
+        stage = 1;
         SetMultimap<String, ASMData> data = event.getASMHarvestedData().getAnnotationsFor(FMLCommonHandler.instance().findContainerFor(mod));
 
         queryModules(data.get(Module.class.getName()));
@@ -73,6 +83,29 @@ public class InitHandler {
     }
 
     public void preInit(FMLPreInitializationEvent e) {
+        Preconditions.checkArgument(stage != 1, "You have to call this method after start()");
+        stage = 2;
+        List<String> notLoaded = new LinkedList<>();
+        for (String dependency : hardDependencies) {
+            if (!Loader.isModLoaded(dependency)) {
+                notLoaded.add(dependency);
+            }
+        }
+        if (notLoaded.size() > 0) {
+            logger.error("Not loaded mods: " + notLoaded.toString());
+            logger.error("Those are mandatory mods, so goodbye!");
+            FMLCommonHandler.instance().exitJava(1, false);
+        }
+        notLoaded.clear();
+        for (String dependency : softDependencies) {
+            if (!Loader.isModLoaded(dependency)) {
+                notLoaded.add(dependency);
+            }
+        }
+        if (notLoaded.size() > 0) {
+            logger.info("Not loaded mods: " + notLoaded.toString());
+            logger.info("Those aren't mandatory mods");
+        }
         for (RegistryData registryClass : registryClasses) {
             if (registryClass.dependencies.size() > 0) {
                 boolean flag = false;
@@ -226,7 +259,7 @@ public class InitHandler {
             }
         }
         sortModules();
-        for (Data module : moduleClasses) {
+        for (ModuleData module : moduleClasses) {
             if (module.dependencies.size() > 0) {
                 boolean flag = false;
                 for (String dependency : module.dependencies) {
@@ -243,6 +276,10 @@ public class InitHandler {
             } catch (Exception e1) {
                 logger.warn("Can't load module " + module.clazz);
                 logger.error(e1);
+                if (module.mandatory) {
+                    logger.error("Module " + module.clazz + " is mandatory, so goodbye!");
+                    FMLCommonHandler.instance().exitJava(1, false);
+                }
                 continue;
             }
             modules.add((ModModule) o);
@@ -256,7 +293,7 @@ public class InitHandler {
         if (!ModModule.class.isAssignableFrom(clazz)) {
             return new StaticModModule(clazz);
         } else {
-            return buildInstance(className);
+            return (ModModule) buildInstance(className);
         }
     }
 
@@ -287,12 +324,15 @@ public class InitHandler {
 
 
     public void init(FMLInitializationEvent e) {
+        Preconditions.checkArgument(stage != 2, "You have to call this method after preInit()");
+        stage = 3;
         for (ModModule module : modules) {
             module.onInit(e);
         }
     }
 
     public void postInit(FMLPostInitializationEvent e) {
+        Preconditions.checkArgument(stage != 3, "You have to call this method after init()");
         for (ModModule module : modules) {
             module.onPostInit(e);
         }
@@ -360,8 +400,8 @@ public class InitHandler {
         throw new Exception("Custom registry method not found");
     }
 
-    private static <T> T buildInstance(String className) throws Exception {
-        Class<? extends T> clazz = (Class<? extends T>) Class.forName(className);
+    private static Object buildInstance(String className) throws Exception {
+        Class<?> clazz = Class.forName(className);
 
         for (Method method : clazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(InstanceFactory.class)) {
@@ -374,7 +414,7 @@ public class InitHandler {
                 if (method.getParameterCount() > 0) throw new InvalidParametersException(className, method.getName());
 
                 method.setAccessible(true);
-                return (T) method.invoke(clazz);
+                return method.invoke(clazz);
             }
         }
         Constructor constructor = clazz.getConstructor();
@@ -431,7 +471,7 @@ public class InitHandler {
                 softDependencies.addAll(dependencies);
             }
 
-            ModuleData moduleData = new ModuleData(dependencies, datum.getClassName(), priority);
+            ModuleData moduleData = new ModuleData(dependencies, datum.getClassName(), priority, mandatory);
             moduleClasses.add(moduleData);
         }
     }
@@ -472,8 +512,6 @@ public class InitHandler {
 
         if (Strings.isNullOrEmpty(name)) throw new InvalidRegistryNameException(nameCopy);
 
-        StringBuilder builder = new StringBuilder(name);
-        Matcher matcher = pattern.matcher(builder);
         if (Character.isUpperCase(name.charAt(0))) {
             name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
         }
@@ -497,7 +535,7 @@ public class InitHandler {
 
     private void queryItemRenders(Set<ASMData> data) {
         for (ASMData datum : data) {
-            String item = datum.getAnnotationInfo().get("itemName") == null ? "" : (String) datum.getAnnotationInfo().get("itemName");
+            String item = datum.getAnnotationInfo().get("item") == null ? "" : (String) datum.getAnnotationInfo().get("itemName");
             boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
             itemRenderClasses.add(new ItemRenderRegistryData(customRegistry, item, datum.getClassName()));

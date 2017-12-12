@@ -6,14 +6,16 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Created by JustAGod on 10.12.17.
+ * Писать над типом IItemRender
+ * Автоматически привязывает экземпляр класса к предмету
+ * @author JustAGod
  */
 @Target(value = {ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ItemRenderRegistryObject {
 
     @SuppressWarnings("unused")
-    String[] items();
+    String item();
 
     @SuppressWarnings("unused")
     boolean customRegistry() default false;

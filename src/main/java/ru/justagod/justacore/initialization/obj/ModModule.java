@@ -7,9 +7,11 @@ import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 /**
  * Created by JustAGod on 10.12.17.
  */
-public abstract class ModModule {
+public interface ModModule {
 
-    public void onPreInit(FMLPreInitializationEvent e) {}
-    public void onInit(FMLInitializationEvent e) {}
-    public void onPostInit(FMLPostInitializationEvent e) {}
+    void onPreInit(FMLPreInitializationEvent e);
+
+    void onInit(FMLInitializationEvent e);
+
+    void onPostInit(FMLPostInitializationEvent e);
 }

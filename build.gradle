@@ -1,3 +1,8 @@
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
+}
 buildscript {
     repositories {
         mavenCentral()
@@ -5,7 +10,6 @@ buildscript {
             name = "forge"
             url = "http://files.minecraftforge.net/maven"
         }
-        maven { url 'https://jitpack.io' }
 
     }
     dependencies {
@@ -33,7 +37,6 @@ minecraft {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    compile 'com.github.JustAGod1:JustACore:0.2'
 
 }
 

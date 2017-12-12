@@ -7,7 +7,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
 import ru.justagod.justacore.example.gui.SimpleGui;
-import ru.justagod.justacore.initialization.annotation.InstnaceFactory;
+import ru.justagod.justacore.initialization.annotation.InstanceFactory;
 import ru.justagod.justacore.initialization.annotation.RegistryObject;
 
 /**
@@ -25,7 +25,7 @@ public class BlockGui extends Block {
         return Blocks.bookshelf.getIcon(p_149691_1_, p_149691_2_);
     }
 
-    @InstnaceFactory
+    @InstanceFactory
     public static BlockGui create() {
         return new BlockGui();
     }

@@ -1,17 +1,20 @@
 package ru.justagod.justacore.initialization;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.SetMultimap;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.discovery.ASMDataTable.ASMData;
+import cpw.mods.fml.common.discovery.asm.ModAnnotation;
 import cpw.mods.fml.common.event.FMLConstructionEvent;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
+import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.registry.GameData;
 import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.relauncher.ReflectionHelper;
 import cpw.mods.fml.relauncher.Side;
-import joptsimple.internal.Strings;
 import net.minecraft.block.Block;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemBlock;
@@ -21,12 +24,11 @@ import net.minecraftforge.client.MinecraftForgeClient;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import ru.justagod.justacore.initialization.annotation.*;
-import ru.justagod.justacore.initialization.data.Data;
-import ru.justagod.justacore.initialization.data.ItemRenderRegistryData;
-import ru.justagod.justacore.initialization.data.RegistryContainerData;
-import ru.justagod.justacore.initialization.data.RegistryData;
+import ru.justagod.justacore.initialization.data.*;
 import ru.justagod.justacore.initialization.obj.ModModule;
+import ru.justagod.justacore.initialization.obj.StaticModModule;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -47,7 +49,7 @@ public class InitHandler {
     private final Pattern pattern = Pattern.compile("[A-Z]");
     private final Set<RegistryData> registryClasses = new LinkedHashSet<>();
     private final Set<RegistryData> tileClasses = new LinkedHashSet<>();
-    private final Set<Data> moduleClasses = new LinkedHashSet<>();
+    private final Set<ModuleData> moduleClasses = new LinkedHashSet<>();
     private final Set<ItemRenderRegistryData> itemRenderClasses = new LinkedHashSet<>();
     private final Set<RegistryContainerData> containerClasses = new LinkedHashSet<>();
 
@@ -63,7 +65,7 @@ public class InitHandler {
     public void start(FMLConstructionEvent event) {
         SetMultimap<String, ASMData> data = event.getASMHarvestedData().getAnnotationsFor(FMLCommonHandler.instance().findContainerFor(mod));
 
-        queryModules(data.get(IntegrationModule.class.getName()));
+        queryModules(data.get(Module.class.getName()));
         queryRegistryObjects(data.get(RegistryObject.class.getName()));
         queryItemRenders(data.get(ItemRenderRegistryObject.class.getName()));
         queryTiles(data.get(TileRegistryObject.class.getName()));
@@ -72,7 +74,7 @@ public class InitHandler {
 
     public void preInit(FMLPreInitializationEvent e) {
         for (RegistryData registryClass : registryClasses) {
-            if (registryClass.dependencies.length > 0) {
+            if (registryClass.dependencies.size() > 0) {
                 boolean flag = false;
                 for (String dependency : registryClass.dependencies) {
                     if (!Loader.isModLoaded(dependency)) {
@@ -125,7 +127,7 @@ public class InitHandler {
             }
         }
         for (RegistryData tile : tileClasses) {
-            if (tile.dependencies.length > 0) {
+            if (tile.dependencies.size() > 0) {
                 boolean flag = false;
                 for (String dependency : tile.dependencies) {
                     if (!Loader.isModLoaded(dependency)) {
@@ -166,7 +168,7 @@ public class InitHandler {
         }
         for (RegistryContainerData container : containerClasses) {
             Object o;
-            if (container.dependencies.length > 0) {
+            if (container.dependencies.size() > 0) {
                 boolean flag = false;
                 for (String dependency : container.dependencies) {
                     if (!Loader.isModLoaded(dependency)) {
@@ -223,8 +225,9 @@ public class InitHandler {
                 }
             }
         }
+        sortModules();
         for (Data module : moduleClasses) {
-            if (module.dependencies.length > 0) {
+            if (module.dependencies.size() > 0) {
                 boolean flag = false;
                 for (String dependency : module.dependencies) {
                     if (!Loader.isModLoaded(dependency)) {
@@ -236,14 +239,10 @@ public class InitHandler {
             }
             Object o;
             try {
-                o = buildInstance(module.clazz);
+                o = buildModule(module.clazz);
             } catch (Exception e1) {
                 logger.warn("Can't load module " + module.clazz);
                 logger.error(e1);
-                continue;
-            }
-            if (!(o instanceof ModModule)) {
-                logger.warn("Module " + module.clazz + " have to extends ModModule");
                 continue;
             }
             modules.add((ModModule) o);
@@ -251,6 +250,40 @@ public class InitHandler {
         }
     }
 
+    private ModModule buildModule(String className) throws Exception {
+        Class clazz = Class.forName(className);
+
+        if (!ModModule.class.isAssignableFrom(clazz)) {
+            return new StaticModModule(clazz);
+        } else {
+            return buildInstance(className);
+        }
+    }
+
+    private void sortModules() {
+        List<ModuleData> highest = new LinkedList<>();
+        List<ModuleData> high = new LinkedList<>();
+        List<ModuleData> normal = new LinkedList<>();
+        List<ModuleData> low = new LinkedList<>();
+        List<ModuleData> lowest = new LinkedList<>();
+
+        for (ModuleData moduleData : moduleClasses) {
+            if (moduleData.priority == EventPriority.HIGHEST) highest.add(moduleData);
+            if (moduleData.priority == EventPriority.HIGH) high.add(moduleData);
+            if (moduleData.priority == EventPriority.NORMAL) normal.add(moduleData);
+            if (moduleData.priority == EventPriority.LOW) low.add(moduleData);
+            if (moduleData.priority == EventPriority.LOWEST) lowest.add(moduleData);
+        }
+
+        moduleClasses.clear();
+
+        moduleClasses.addAll(highest);
+        moduleClasses.addAll(high);
+        moduleClasses.addAll(normal);
+        moduleClasses.addAll(low);
+        moduleClasses.addAll(lowest);
+
+    }
 
 
     public void init(FMLInitializationEvent e) {
@@ -330,9 +363,9 @@ public class InitHandler {
     private static <T> T buildInstance(String className) throws Exception {
         Class<? extends T> clazz = (Class<? extends T>) Class.forName(className);
 
-        for (Method method : clazz.getMethods()) {
-            if (method.isAnnotationPresent(InstnaceFactory.class)) {
-                if (!Modifier.isStatic(method.getModifiers()) || !Modifier.isPublic(method.getModifiers())) {
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(InstanceFactory.class)) {
+                if (!Modifier.isStatic(method.getModifiers())) {
                     throw new InvalidModifiersException(className, method.getName());
                 }
                 if (!method.getReturnType().isAssignableFrom(clazz)) {
@@ -340,19 +373,22 @@ public class InitHandler {
                 }
                 if (method.getParameterCount() > 0) throw new InvalidParametersException(className, method.getName());
 
+                method.setAccessible(true);
                 return (T) method.invoke(clazz);
             }
         }
+        Constructor constructor = clazz.getConstructor();
+        constructor.newInstance();
         return clazz.newInstance();
     }
 
     private void queryTiles(Set<ASMData> data) {
         for (ASMData datum : data) {
-            String[] dependencies = (String[]) datum.getAnnotationInfo().get("dependencies");
+            ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             String id = datum.getAnnotationInfo().get("registryName") == null ? "" : (String) datum.getAnnotationInfo().get("registryName");
             boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
-            softDependencies.addAll(Arrays.asList(dependencies));
+            softDependencies.addAll(dependencies);
 
             if (Strings.isNullOrEmpty(id) && !customRegistry) {
                 id = datum.getClassName();
@@ -370,16 +406,32 @@ public class InitHandler {
 
     private void queryModules(Set<ASMData> data) {
         for (ASMData datum : data) {
-            String[] dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new String[]{} : (String[]) datum.getAnnotationInfo().get("dependencies");
+            ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             boolean mandatory = datum.getAnnotationInfo().get("isMandatory") == null ? false : (Boolean) datum.getAnnotationInfo().get("isMandatory");
+            String rawPriority = datum.getAnnotationInfo().get("priority") == null ? "NORMAL" : ReflectionHelper.getPrivateValue(ModAnnotation.EnumHolder.class, (ModAnnotation.EnumHolder) datum.getAnnotationInfo().get("priority"), "value");
 
-            if (mandatory) {
-                hardDependencies.addAll(Arrays.asList(dependencies));
+            EventPriority priority;
+            if (rawPriority.equals("HIGHEST")) {
+                priority = EventPriority.HIGHEST;
+            } else if (rawPriority.equals("HIGH")) {
+                priority = EventPriority.HIGH;
+            } else if (rawPriority.equals("NORMAL")) {
+                priority = EventPriority.NORMAL;
+            } else if (rawPriority.equals("LOW")) {
+                priority = EventPriority.LOW;
+            } else if (rawPriority.equals("LOWEST")) {
+                priority = EventPriority.LOWEST;
             } else {
-                softDependencies.addAll(Arrays.asList(dependencies));
+                priority = EventPriority.NORMAL;
             }
 
-            Data moduleData = new Data(dependencies, datum.getClassName());
+            if (mandatory) {
+                hardDependencies.addAll(dependencies);
+            } else {
+                softDependencies.addAll(dependencies);
+            }
+
+            ModuleData moduleData = new ModuleData(dependencies, datum.getClassName(), priority);
             moduleClasses.add(moduleData);
         }
     }
@@ -387,12 +439,12 @@ public class InitHandler {
     private void queryRegistryObjects(Set<ASMData> data) {
 
         for (ASMData datum : data) {
-            String[] dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new String[]{} : (String[]) datum.getAnnotationInfo().get("dependencies");
+            ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             String id = datum.getAnnotationInfo().get("registryId") == null ? "" : (String) datum.getAnnotationInfo().get("registryId");
             String itemBlock = datum.getAnnotationInfo().get("itemBlock") == null ? "" : (String) datum.getAnnotationInfo().get("itemBlock");
             Boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
-            softDependencies.addAll(Arrays.asList(dependencies));
+            softDependencies.addAll(dependencies);
 
             if (Strings.isNullOrEmpty(id) && !customRegistry) {
                 id = datum.getClassName().substring(datum.getClassName().lastIndexOf(".") + 1);
@@ -433,11 +485,11 @@ public class InitHandler {
 
     private void queryContainers(Set<ASMData> data) {
         for (ASMData datum : data) {
-            String[] dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new String[]{} : (String[]) datum.getAnnotationInfo().get("dependencies");
+            ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             String id = datum.getAnnotationInfo().get("registryId") == null ? "" : (String) datum.getAnnotationInfo().get("registryId");
             Boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
-            softDependencies.addAll(Arrays.asList(dependencies));
+            softDependencies.addAll(dependencies);
 
             containerClasses.add(new RegistryContainerData(dependencies, datum.getClassName(), customRegistry));
         }

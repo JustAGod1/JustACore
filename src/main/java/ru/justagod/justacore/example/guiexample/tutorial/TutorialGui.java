@@ -1,4 +1,4 @@
-package ru.justagod.justacore.example.tutorial;
+package ru.justagod.justacore.example.guiexample.tutorial;
 
 import net.minecraft.util.ResourceLocation;
 import ru.justagod.justacore.gui.animation.MovingToAnimation;

@@ -1,4 +1,4 @@
-package ru.justagod.justacore.example.block;
+package ru.justagod.justacore.example.guiexample.block;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -6,7 +6,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
 import net.minecraft.world.World;
-import ru.justagod.justacore.example.gui.SimpleGui;
+import ru.justagod.justacore.example.guiexample.gui.SimpleGui;
 import ru.justagod.justacore.initialization.annotation.InstanceFactory;
 import ru.justagod.justacore.initialization.annotation.RegistryObject;
 

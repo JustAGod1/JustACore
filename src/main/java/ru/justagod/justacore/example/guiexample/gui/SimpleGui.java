@@ -1,4 +1,4 @@
-package ru.justagod.justacore.example.gui;
+package ru.justagod.justacore.example.guiexample.gui;
 
 import ru.justagod.justacore.gui.animation.MovingToAnimation;
 import ru.justagod.justacore.gui.animation.QueuedAnimation;

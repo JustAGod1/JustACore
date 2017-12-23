@@ -41,4 +41,6 @@ public @interface Module {
      */
     @SuppressWarnings("unused")
     EventPriority priority() default EventPriority.NORMAL;
+
+    String configDependency() default "";
 }

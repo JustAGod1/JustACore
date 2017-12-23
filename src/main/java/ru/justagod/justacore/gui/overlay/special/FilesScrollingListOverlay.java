@@ -1,8 +1,8 @@
 package ru.justagod.justacore.gui.overlay.special;
 
-import javafx.util.Callback;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
+import ru.justagod.justacore.gui.model.Callback;
 import ru.justagod.justacore.gui.overlay.common.button.ButtonOverlay;
 import ru.justagod.justacore.gui.overlay.common.button.CustomButtonOverlay;
 import ru.justagod.justacore.gui.parent.PanelOverlay;
@@ -37,25 +37,16 @@ public class FilesScrollingListOverlay extends PanelOverlay {
         this.filter = filter;
 
 
-        parent.addOverlay(prev = new ButtonOverlay(29, 75, 13, I18n.format("choose.previous"), new Runnable() {
-            @Override
-            public void run() {
-                if (page > 0) setPage(page - 1);
+        parent.addOverlay(prev = new ButtonOverlay(29, 75, 13, I18n.format("choose.previous"), () -> {
+            if (page > 0) setPage(page - 1);
 
-            }
         }));
-        parent.addOverlay(accept = new ButtonOverlay(57, 75, 13, I18n.format("choose.next"), new Runnable() {
-            @Override
-            public void run() {
-                if (page < pagesCount - 1) setPage(page + 1);
-            }
+        parent.addOverlay(accept = new ButtonOverlay(57, 75, 13, I18n.format("choose.next"), () -> {
+            if (page < pagesCount - 1) setPage(page + 1);
         }));
-        parent.addOverlay(next = new ButtonOverlay(43, 75, 13, I18n.format("choose.accept"), new Runnable() {
-            @Override
-            public void run() {
-                if (currentEntry != null) {
-                    callback.call(currentEntry.getFile());
-                }
+        parent.addOverlay(next = new ButtonOverlay(43, 75, 13, I18n.format("choose.accept"), () -> {
+            if (currentEntry != null) {
+                callback.call(currentEntry.getFile());
             }
         }));
         createPages();

@@ -19,4 +19,6 @@ public @interface ItemRenderRegistryObject {
 
     @SuppressWarnings("unused")
     boolean customRegistry() default false;
+
+
 }

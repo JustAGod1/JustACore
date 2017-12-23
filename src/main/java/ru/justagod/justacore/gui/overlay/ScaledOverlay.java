@@ -154,16 +154,18 @@ public abstract class ScaledOverlay extends Overlay {
     }
 
     public boolean onKey(char key, int code) {
-        if (isFocused) {
+        if (isFocused()) {
             if (keyboardListeners != null) {
                 if (keyboardListeners.size() > 0) {
                     for (KeyboardListener listener : keyboardListeners) {
                         listener.onKey(this, key, code);
                     }
-                    doOnKey(key, code);
-                    return true;
+
                 }
+
             }
+            doOnKey(key, code);
+            return true;
 
         }
         return false;

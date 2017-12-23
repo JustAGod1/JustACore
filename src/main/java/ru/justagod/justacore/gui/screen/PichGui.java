@@ -8,8 +8,8 @@ import net.minecraft.client.gui.ScaledResolution;
 import org.lwjgl.input.Mouse;
 import ru.justagod.justacore.gui.helper.DrawHelper;
 import ru.justagod.justacore.gui.model.OverlaysCollection;
-import ru.justagod.justacore.gui.overlay.common.CenteredTextOverlay;
 import ru.justagod.justacore.gui.overlay.ScaledOverlay;
+import ru.justagod.justacore.gui.overlay.common.CenteredTextOverlay;
 import ru.justagod.justacore.gui.parent.OverlayParent;
 
 import java.util.Collection;
@@ -74,11 +74,17 @@ public class PichGui extends GuiScreen implements OverlayParent {
 
     @Override
     protected void keyTyped(char c, int keyCode) {
-        super.keyTyped(c, keyCode);
+        if (keyCode == 1) {
+            onEsc();
+        }
         overlays.iterate(overlay -> {
             overlay.onKey(c, keyCode);
             return true;
         });
+    }
+
+    protected void onEsc() {
+        close();
     }
 
     @Override
@@ -239,14 +245,6 @@ public class PichGui extends GuiScreen implements OverlayParent {
 
     }
 
-    public static class OpenPichGuiEvent extends Event {
-        public PichGui pichGui;
-
-        public OpenPichGuiEvent(PichGui pichGui) {
-            this.pichGui = pichGui;
-        }
-    }
-
     @Override
     public String toString() {
         return "PichGui{" +
@@ -255,5 +253,13 @@ public class PichGui extends GuiScreen implements OverlayParent {
                 ", lastMouseX=" + lastMouseX +
                 ", lastMouseY=" + lastMouseY +
                 "} " + super.toString();
+    }
+
+    public static class OpenPichGuiEvent extends Event {
+        public PichGui pichGui;
+
+        public OpenPichGuiEvent(PichGui pichGui) {
+            this.pichGui = pichGui;
+        }
     }
 }

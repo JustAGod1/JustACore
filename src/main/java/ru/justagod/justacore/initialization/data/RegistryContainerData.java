@@ -10,8 +10,8 @@ public class RegistryContainerData extends Data {
 
     public final boolean customRegistry;
 
-    public RegistryContainerData(ArrayList<String> dependencies, String clazz, boolean customRegistry) {
-        super(dependencies, clazz);
+    public RegistryContainerData(ArrayList<String> dependencies, String clazz, boolean customRegistry, String configDependency) {
+        super(dependencies, clazz, configDependency);
         this.customRegistry = customRegistry;
     }
 }

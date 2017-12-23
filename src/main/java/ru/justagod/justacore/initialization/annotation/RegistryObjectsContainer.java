@@ -26,4 +26,6 @@ public @interface RegistryObjectsContainer {
      */
     @SuppressWarnings("unused")
     boolean customRegistry() default false;
+
+    String configDependency() default "";
 }

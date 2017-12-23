@@ -32,27 +32,25 @@ import ru.justagod.justacore.initialization.data.RegistryData;
 import ru.justagod.justacore.initialization.obj.ModModule;
 import ru.justagod.justacore.initialization.obj.StaticModModule;
 
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Чтобы инициализатор работал корректно вам нужно следовать шаблону
- * который представлен в классе {@link ru.justagod.justacore.Main}
+ *
  * @author JustAGod
  */
 @SuppressWarnings("unused")
 public class InitHandler {
 
-    private static final Logger logger = LogManager.getLogger("InitHandler");
-
-    /**
-     * Просто чтобы отлавливать ошибки
-     */
-    private int stage = 0;
-
+    static final Logger logger = LogManager.getLogger("InitHandler");
+    private static final List<ModModule> modules = new LinkedList<>();
     private final Object mod;
 
     private final Set<RegistryData> registryClasses = new LinkedHashSet<>();
@@ -64,14 +62,66 @@ public class InitHandler {
     private final Set<String> softDependencies = new LinkedHashSet<>();
     private final Set<String> hardDependencies = new LinkedHashSet<>();
 
-    private static final List<ModModule> modules = new LinkedList<>();
+    private final Config config;
+    /**
+     * Просто чтобы отлавливать ошибки
+     */
+    private int stage = 0;
 
     public InitHandler(Object mod) {
         this.mod = mod;
+        config = new Config("config/" + "jam" + "config.json");
+    }
+
+    public static String transformName(String name) throws InvalidRegistryNameException {
+        final String nameCopy = name;
+        name = name.replace("Item", "");
+        name = name.replace("Block", "");
+        if (name.startsWith("TileEntity")) {
+            name = name.replace("TileEntity", "");
+        } else {
+            name = name.replace("Tile", "");
+        }
+
+        if (Strings.isNullOrEmpty(name)) throw new InvalidRegistryNameException(nameCopy);
+
+        if (Character.isUpperCase(name.charAt(0))) {
+            name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
+        }
+
+        name = name.replaceAll("[A-Z]", "_$0");
+
+        return name.toLowerCase();
+    }
+
+    public Config getConfig() {
+        return config;
+    }
+
+    private Object buildInstance(String className) throws Exception {
+        Class<?> clazz = Class.forName(className);
+
+        for (Method method : clazz.getDeclaredMethods()) {
+            if (method.isAnnotationPresent(InstanceFactory.class)) {
+                if (!Modifier.isStatic(method.getModifiers())) {
+                    throw new InvalidModifiersException(className, method.getName());
+                }
+                if (!method.getReturnType().isAssignableFrom(clazz)) {
+                    throw new IllegalReturnTypeException(className, clazz.getName());
+                }
+                if (method.getParameterCount() > 0) throw new InvalidParametersException(className, method.getName());
+
+                method.setAccessible(true);
+                return method.invoke(clazz);
+            }
+        }
+        Constructor constructor = clazz.getConstructor();
+        constructor.newInstance();
+        return clazz.newInstance();
     }
 
     public void start(FMLConstructionEvent event) {
-        Preconditions.checkArgument(stage != 0, "You have to call this method first");
+        Preconditions.checkArgument(stage == 0, "You have to call this method first");
         stage = 1;
         SetMultimap<String, ASMData> data = event.getASMHarvestedData().getAnnotationsFor(FMLCommonHandler.instance().findContainerFor(mod));
 
@@ -79,11 +129,12 @@ public class InitHandler {
         queryRegistryObjects(data.get(RegistryObject.class.getName()));
         queryItemRenders(data.get(ItemRenderRegistryObject.class.getName()));
         queryTiles(data.get(TileRegistryObject.class.getName()));
+        queryContainers(data.get(RegistryObjectsContainer.class.getName()));
 
     }
 
     public void preInit(FMLPreInitializationEvent e) {
-        Preconditions.checkArgument(stage != 1, "You have to call this method after start()");
+        Preconditions.checkArgument(stage == 1, "You have to call this method after start()");
         stage = 2;
         List<String> notLoaded = new LinkedList<>();
         for (String dependency : hardDependencies) {
@@ -116,6 +167,9 @@ public class InitHandler {
                     }
                 }
                 if (flag) continue;
+            }
+            if (!config.getBooleanValue(registryClass.configDependency)) {
+                continue;
             }
             Object o;
             try {
@@ -160,6 +214,9 @@ public class InitHandler {
             }
         }
         for (RegistryData tile : tileClasses) {
+            if (!config.getBooleanValue(tile.configDependency)) {
+                continue;
+            }
             if (tile.dependencies.size() > 0) {
                 boolean flag = false;
                 for (String dependency : tile.dependencies) {
@@ -200,7 +257,10 @@ public class InitHandler {
             }
         }
         for (RegistryContainerData container : containerClasses) {
-            Object o;
+            if (!config.getBooleanValue(container.configDependency)) {
+                continue;
+            }
+
             if (container.dependencies.size() > 0) {
                 boolean flag = false;
                 for (String dependency : container.dependencies) {
@@ -221,6 +281,7 @@ public class InitHandler {
                 continue;
             }
             registerFields(clazz);
+
 
         }
         if (e.getSide() == Side.CLIENT) {
@@ -260,6 +321,9 @@ public class InitHandler {
         }
         sortModules();
         for (ModuleData module : moduleClasses) {
+            if (!config.getBooleanValue(module.configDependency)) {
+                continue;
+            }
             if (module.dependencies.size() > 0) {
                 boolean flag = false;
                 for (String dependency : module.dependencies) {
@@ -274,8 +338,7 @@ public class InitHandler {
             try {
                 o = buildModule(module.clazz);
             } catch (Exception e1) {
-                logger.warn("Can't load module " + module.clazz);
-                logger.error(e1);
+                logger.error("Can't load module " + module.clazz, e1);
                 if (module.mandatory) {
                     logger.error("Module " + module.clazz + " is mandatory, so goodbye!");
                     FMLCommonHandler.instance().exitJava(1, false);
@@ -283,6 +346,7 @@ public class InitHandler {
                 continue;
             }
             modules.add((ModModule) o);
+            logger.info("Module " + module.clazz.substring(module.clazz.lastIndexOf('.') + 1) + " has been loaded");
             ((ModModule) o).onPreInit(e);
         }
     }
@@ -322,9 +386,8 @@ public class InitHandler {
 
     }
 
-
     public void init(FMLInitializationEvent e) {
-        Preconditions.checkArgument(stage != 2, "You have to call this method after preInit()");
+        Preconditions.checkArgument(stage == 2, "You have to call this method after preInit()");
         stage = 3;
         for (ModModule module : modules) {
             module.onInit(e);
@@ -332,7 +395,7 @@ public class InitHandler {
     }
 
     public void postInit(FMLPostInitializationEvent e) {
-        Preconditions.checkArgument(stage != 3, "You have to call this method after init()");
+        Preconditions.checkArgument(stage == 3, "You have to call this method after init()");
         for (ModModule module : modules) {
             module.onPostInit(e);
         }
@@ -341,7 +404,7 @@ public class InitHandler {
     private void registerFields(Class clazz) {
         for (Field field : clazz.getFields()) {
             if (!Modifier.isStatic(field.getModifiers())) continue;
-            Class fieldClazz = field.getDeclaringClass();
+            Class fieldClazz = field.getType();
             try {
                 if (Item.class.isAssignableFrom(fieldClazz) || Block.class.isAssignableFrom(fieldClazz)) {
                     if (!field.isAnnotationPresent(RegistryExcept.class)) {
@@ -357,18 +420,8 @@ public class InitHandler {
                                 GameRegistry.registerItem((Item) o, id);
                             } else if (o instanceof Block) {
                                 if (field.isAnnotationPresent(RegistryBlockSpecial.class)) {
-                                    String nameItemBlock = field.getAnnotation(RegistryBlockSpecial.class).classItemBlock();
-                                    try {
-                                        Class classItemBlock = Class.forName(nameItemBlock);
-                                        if (!ItemBlock.class.isAssignableFrom(classItemBlock)) {
-                                            logger.warn("Class " + nameItemBlock + " must extends ItemBlock");
-                                            continue;
-                                        }
-                                        GameRegistry.registerBlock((Block) o, classItemBlock, id);
-                                    } catch (ClassNotFoundException e) {
-                                        logger.error(e);
-                                        continue;
-                                    }
+                                    Class<? extends ItemBlock> classItemBlock = field.getAnnotation(RegistryBlockSpecial.class).classItemBlock();
+                                    GameRegistry.registerBlock((Block) o, classItemBlock, id);
                                 } else {
                                     GameRegistry.registerBlock((Block) o, id);
                                 }
@@ -397,35 +450,14 @@ public class InitHandler {
                 return;
             }
         }
-        throw new Exception("Custom registry method not found");
-    }
-
-    private static Object buildInstance(String className) throws Exception {
-        Class<?> clazz = Class.forName(className);
-
-        for (Method method : clazz.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(InstanceFactory.class)) {
-                if (!Modifier.isStatic(method.getModifiers())) {
-                    throw new InvalidModifiersException(className, method.getName());
-                }
-                if (!method.getReturnType().isAssignableFrom(clazz)) {
-                    throw new IllegalReturnTypeException(className, clazz.getName());
-                }
-                if (method.getParameterCount() > 0) throw new InvalidParametersException(className, method.getName());
-
-                method.setAccessible(true);
-                return method.invoke(clazz);
-            }
-        }
-        Constructor constructor = clazz.getConstructor();
-        constructor.newInstance();
-        return clazz.newInstance();
+        throw new Exception("Custom registry method wasn't found");
     }
 
     private void queryTiles(Set<ASMData> data) {
         for (ASMData datum : data) {
             ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             String id = datum.getAnnotationInfo().get("registryName") == null ? "" : (String) datum.getAnnotationInfo().get("registryName");
+            String config = datum.getAnnotationInfo().get("configDependency") == null ? "" : (String) datum.getAnnotationInfo().get("configDependency");
             boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
             softDependencies.addAll(dependencies);
@@ -439,7 +471,7 @@ public class InitHandler {
                 }
             }
 
-            RegistryData registryData = new RegistryData(dependencies, datum.getClassName(), id, customRegistry, "");
+            RegistryData registryData = new RegistryData(dependencies, datum.getClassName(), id, customRegistry, "", config);
             tileClasses.add(registryData);
         }
     }
@@ -448,6 +480,7 @@ public class InitHandler {
         for (ASMData datum : data) {
             ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             boolean mandatory = datum.getAnnotationInfo().get("isMandatory") == null ? false : (Boolean) datum.getAnnotationInfo().get("isMandatory");
+            String config = datum.getAnnotationInfo().get("configDependency") == null ? "" : (String) datum.getAnnotationInfo().get("configDependency");
             String rawPriority = datum.getAnnotationInfo().get("priority") == null ? "NORMAL" : ReflectionHelper.getPrivateValue(ModAnnotation.EnumHolder.class, (ModAnnotation.EnumHolder) datum.getAnnotationInfo().get("priority"), "value");
 
             EventPriority priority;
@@ -471,7 +504,7 @@ public class InitHandler {
                 softDependencies.addAll(dependencies);
             }
 
-            ModuleData moduleData = new ModuleData(dependencies, datum.getClassName(), priority, mandatory);
+            ModuleData moduleData = new ModuleData(dependencies, datum.getClassName(), priority, mandatory, config);
             moduleClasses.add(moduleData);
         }
     }
@@ -482,6 +515,7 @@ public class InitHandler {
             ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             String id = datum.getAnnotationInfo().get("registryId") == null ? "" : (String) datum.getAnnotationInfo().get("registryId");
             String itemBlock = datum.getAnnotationInfo().get("itemBlock") == null ? "" : (String) datum.getAnnotationInfo().get("itemBlock");
+            String config = datum.getAnnotationInfo().get("configDependency") == null ? "" : (String) datum.getAnnotationInfo().get("configDependency");
             Boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
             softDependencies.addAll(dependencies);
@@ -495,30 +529,9 @@ public class InitHandler {
                 }
             }
 
-            RegistryData registryData = new RegistryData(dependencies, datum.getClassName(), id, customRegistry, itemBlock);
+            RegistryData registryData = new RegistryData(dependencies, datum.getClassName(), id, customRegistry, itemBlock, config);
             registryClasses.add(registryData);
         }
-    }
-
-    public String transformName(String name) throws InvalidRegistryNameException {
-        final String nameCopy = name;
-        name = name.replace("Item", "");
-        name = name.replace("Block", "");
-        if (name.startsWith("TileEntity")) {
-            name = name.replace("TileEntity", "");
-        } else {
-            name = name.replace("Tile", "");
-        }
-
-        if (Strings.isNullOrEmpty(name)) throw new InvalidRegistryNameException(nameCopy);
-
-        if (Character.isUpperCase(name.charAt(0))) {
-            name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
-        }
-
-        name = name.replaceAll("[A-Z]","_$0");
-
-        return name.toLowerCase();
     }
 
     private void queryContainers(Set<ASMData> data) {
@@ -526,10 +539,11 @@ public class InitHandler {
             ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             String id = datum.getAnnotationInfo().get("registryId") == null ? "" : (String) datum.getAnnotationInfo().get("registryId");
             Boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
+            String config = datum.getAnnotationInfo().get("configDependency") == null ? "" : (String) datum.getAnnotationInfo().get("configDependency");
 
             softDependencies.addAll(dependencies);
 
-            containerClasses.add(new RegistryContainerData(dependencies, datum.getClassName(), customRegistry));
+            containerClasses.add(new RegistryContainerData(dependencies, datum.getClassName(), customRegistry, config));
         }
     }
 
@@ -539,6 +553,173 @@ public class InitHandler {
             boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
 
             itemRenderClasses.add(new ItemRenderRegistryData(customRegistry, item, datum.getClassName()));
+        }
+    }
+
+    public static class Config {
+
+        private final Pattern BOOLEAN_FIELD = Pattern.compile("[a-zA-Z]+[ ]*=[ ]*(true|false)[ ]*(//(\\w|\\W)*)?");
+        private final Pattern DOUBLE_FIELD = Pattern.compile("[a-zA-Z]+[ ]*=[ ]*[0-9]+[.,][0-9]+[ ]*(//(\\w|\\W)*)?");
+        private final Pattern INT_FIELD = Pattern.compile("[a-zA-Z]+[ ]*=[ ]*[0-9]+[ ]*(//(\\w|\\W)*)?");
+        private final Pattern EMPTY_LINE = Pattern.compile("[ ]*(//(\\w|\\W)*)?");
+
+        private final Pattern VALUE_NAME = Pattern.compile("[a-zA-Z]+");
+        private final Pattern BOOLEAN_VALUE = Pattern.compile("(true|false)");
+        private final Pattern DOUBLE_VALUE = Pattern.compile("[0-9]+[.,][0-9]+");
+        private final Pattern INT_VALUE = Pattern.compile("[0-9]+");
+
+        private final Pattern COMMENT = Pattern.compile("[ ]*(//(\\w|\\W)*)?");
+
+        private final File file;
+
+        private Map<String, Object> values = new LinkedHashMap<>();
+
+        public Config(File file) {
+            this.file = file;
+            load();
+        }
+
+        public Config(String name) {
+            this(new File(name));
+        }
+
+        private void load() {
+            try {
+                File folder = new File(file.getParent());
+                if (!folder.exists()) {
+                    folder.mkdirs();
+                }
+                if (!file.exists()) {
+                    file.createNewFile();
+
+                    Method method = ClassLoader.class.getDeclaredMethod("getClassLoader", Class.class);
+                    method.setAccessible(true);
+                    ClassLoader loader = (ClassLoader) method.invoke(ClassLoader.class, InitHandler.class);
+
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(loader.getResourceAsStream("config.txt")));
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+
+                    while (reader.ready()) {
+                        String line = reader.readLine();
+                        parseLine(line);
+                        writer.write(line + '\n');
+                    }
+                    writer.close();
+                    reader.close();
+                } else {
+                    BufferedReader reader = new BufferedReader(new FileReader(file));
+
+                    while (reader.ready()) {
+                        parseLine(reader.readLine());
+                    }
+
+                    reader.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                logger.warn("Config file wasn't loaded successful");
+            }
+        }
+
+        private void parseLine(String line) {
+            if (BOOLEAN_FIELD.matcher(line).matches()) {
+                line = COMMENT.matcher(line).replaceAll("");
+
+                Matcher matcher = VALUE_NAME.matcher(line);
+                matcher.find();
+                String name = line.substring(matcher.start(), matcher.end());
+
+                matcher = BOOLEAN_VALUE.matcher(line);
+                matcher.find();
+                Boolean value = Boolean.valueOf(line.substring(matcher.start(), matcher.end()));
+
+                values.put(name, value);
+            } else if (INT_FIELD.matcher(line).matches()) {
+                line = COMMENT.matcher(line).replaceAll("");
+
+                Matcher matcher = VALUE_NAME.matcher(line);
+                matcher.find();
+
+                String name = line.substring(matcher.start(), matcher.end());
+
+                matcher = INT_VALUE.matcher(line);
+                matcher.find();
+                Integer value = Integer.valueOf(line.substring(matcher.start(), matcher.end()));
+
+                values.put(name, value);
+            } else if (DOUBLE_FIELD.matcher(line).matches()) {
+                line = COMMENT.matcher(line).replaceAll("");
+
+                Matcher matcher = VALUE_NAME.matcher(line);
+                matcher.find();
+                String name = line.substring(matcher.start(), matcher.end());
+
+                matcher = DOUBLE_VALUE.matcher(line);
+                matcher.find();
+                Double value = Double.valueOf(line.substring(matcher.start(), matcher.end()));
+
+                values.put(name, value);
+            } else if (!EMPTY_LINE.matcher(line).matches()) {
+                throw new RuntimeException("Invalid line format: " + line + '"');
+            }
+        }
+
+        public boolean getBooleanValue(String key) {
+            return getBooleanValue(key, false);
+        }
+
+        public boolean getBooleanValue(String key, boolean _default) {
+            if (values.containsKey(key)) {
+                Object object = values.get(key);
+
+                if (object instanceof Boolean) {
+                    return (Boolean) object;
+                } else {
+                    return _default;
+                }
+            } else {
+                return _default;
+            }
+        }
+
+        public int getIntValue(String key) {
+            return getIntValue(key, 0);
+        }
+
+        public int getIntValue(String key, int _default) {
+            if (values.containsKey(key)) {
+                Object object = values.get(key);
+
+                if (object instanceof Integer) {
+                    return (Integer) object;
+                } else if (object instanceof Double) {
+                    return (int) object;
+                } else {
+                    return _default;
+                }
+            } else {
+                return _default;
+            }
+        }
+
+        public double getDoubleValue(String key) {
+            return getDoubleValue(key, 0);
+        }
+
+        public double getDoubleValue(String key, double _default) {
+            if (values.containsKey(key)) {
+                Object object = values.get(key);
+
+                if (object instanceof Double) {
+                    return (Double) object;
+                } else if (object instanceof Integer) {
+                    return (double) ((Integer) object);
+                } else {
+                    return _default;
+                }
+            } else {
+                return _default;
+            }
         }
     }
 

@@ -27,7 +27,7 @@ public class StaticModModule implements ModModule {
 
         for (Method method : targetClazz.getDeclaredMethods()) {
             if (method.isAnnotationPresent(ModuleEventHandler.class)) {
-                Preconditions.checkArgument(method.getParameterCount() != 1, "Illegal parameters count");
+                Preconditions.checkArgument(method.getParameterCount() == 1, "Illegal parameters count");
                 Preconditions.checkArgument(Modifier.isStatic(method.getModifiers()), "Method must be static");
 
                 Class parameter = method.getParameterTypes()[0];

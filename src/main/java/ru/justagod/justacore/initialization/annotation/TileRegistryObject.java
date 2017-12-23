@@ -22,4 +22,6 @@ public @interface TileRegistryObject {
 
     @SuppressWarnings("unused")
     boolean customRegistry() default false;
+
+    String configDependency() default "";
 }

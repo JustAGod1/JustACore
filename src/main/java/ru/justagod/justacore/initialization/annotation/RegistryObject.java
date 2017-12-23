@@ -36,4 +36,6 @@ public @interface RegistryObject {
      */
     @SuppressWarnings("unused")
     String itemBlock() default  "";
+
+    String configDependency() default "";
 }

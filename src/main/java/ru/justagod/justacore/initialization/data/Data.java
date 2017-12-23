@@ -10,9 +10,11 @@ public class Data {
 
     public final ArrayList<String> dependencies;
     public final String clazz;
+    public final String configDependency;
 
-    public Data(ArrayList<String> dependencies, String clazz) {
+    public Data(ArrayList<String> dependencies, String clazz, String configDependency) {
         this.dependencies = dependencies;
         this.clazz = clazz;
+        this.configDependency = configDependency;
     }
 }

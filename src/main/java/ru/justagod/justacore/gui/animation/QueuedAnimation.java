@@ -86,5 +86,10 @@ public class QueuedAnimation<T extends Overlay> extends AbstractOverlayAnimator<
         public QueuedAnimation<T> build() {
             return new QueuedAnimation<T>(new ArrayList<OverlayAnimator<T>>(animators), cycled);
         }
+
+        public Builder<T> appendAction(Runnable runnable) {
+            append(new CustomActionAnimation(runnable));
+            return this;
+        }
     }
 }

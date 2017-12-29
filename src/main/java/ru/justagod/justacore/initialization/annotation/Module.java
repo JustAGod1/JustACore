@@ -1,6 +1,8 @@
 package ru.justagod.justacore.initialization.annotation;
 
 import cpw.mods.fml.common.eventhandler.EventPriority;
+import ru.justagod.justacore.initialization.core.InitHandler;
+import ru.justagod.justacore.initialization.obj.Side;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -10,7 +12,7 @@ import java.lang.annotation.Target;
 /**
  * Писать над чем угодно
  * Если тип наследуется от {@link ru.justagod.justacore.initialization.obj.ModModule},
- * то {@link ru.justagod.justacore.initialization.InitHandler} попытаеться создать экземпляр.
+ * то {@link InitHandler} попытаеться создать экземпляр.
  * Если у него ничего не получиться он забудет о вашем модуле. Если Класс не наследуеться
  * от ModModule, инициализатор попытаеться найти статические методы с параметрами FMLPreInitializationEvent,
  * FMLInitializationEvent и FMLPostInitializationEvent. Если он их найдет он будет их вызывать.
@@ -42,5 +44,9 @@ public @interface Module {
     @SuppressWarnings("unused")
     EventPriority priority() default EventPriority.NORMAL;
 
+    @SuppressWarnings("unused")
     String configDependency() default "";
+
+    @SuppressWarnings("unused")
+    Side sideOnly() default Side.COMMON;
 }

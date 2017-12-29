@@ -1,19 +1,22 @@
-package ru.justagod.justacore.initialization;
+package ru.justagod.justacore.initialization.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.SetMultimap;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.FMLModContainer;
 import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.ModContainer;
+import cpw.mods.fml.common.discovery.ASMDataTable;
 import cpw.mods.fml.common.discovery.ASMDataTable.ASMData;
 import cpw.mods.fml.common.discovery.asm.ModAnnotation;
-import cpw.mods.fml.common.event.FMLConstructionEvent;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.registry.GameData;
 import cpw.mods.fml.common.registry.GameRegistry;
+import cpw.mods.fml.common.versioning.DefaultArtifactVersion;
 import cpw.mods.fml.relauncher.ReflectionHelper;
 import cpw.mods.fml.relauncher.Side;
 import net.minecraft.block.Block;
@@ -22,8 +25,13 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
+import net.minecraftforge.oredict.OreDictionary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import ru.justagod.justacore.initialization.IllegalReturnTypeException;
+import ru.justagod.justacore.initialization.InvalidModifiersException;
+import ru.justagod.justacore.initialization.InvalidParametersException;
+import ru.justagod.justacore.initialization.InvalidRegistryNameException;
 import ru.justagod.justacore.initialization.annotation.*;
 import ru.justagod.justacore.initialization.data.ItemRenderRegistryData;
 import ru.justagod.justacore.initialization.data.ModuleData;
@@ -41,17 +49,21 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static ru.justagod.justacore.initialization.obj.Side.CLIENT;
+import static ru.justagod.justacore.initialization.obj.Side.COMMON;
+import static ru.justagod.justacore.initialization.obj.Side.SERVER;
+
 /**
  * Чтобы инициализатор работал корректно вам нужно следовать шаблону
  *
  * @author JustAGod
  */
-@SuppressWarnings("unused")
-public class InitHandler {
+public final class InitHandler {
 
-    static final Logger logger = LogManager.getLogger("InitHandler");
-    private static final List<ModModule> modules = new LinkedList<>();
-    private final Object mod;
+    private final Logger logger;
+    private static final Map<Object, InitHandler> handlers = new LinkedHashMap<>();
+    private final List<ModModule> modules = new LinkedList<>();
+    private final ModContainer mod;
 
     private final Set<RegistryData> registryClasses = new LinkedHashSet<>();
     private final Set<RegistryData> tileClasses = new LinkedHashSet<>();
@@ -68,11 +80,31 @@ public class InitHandler {
      */
     private int stage = 0;
 
-    public InitHandler(Object mod) {
-        this.mod = mod;
-        config = new Config("config/" + "jam" + "config.json");
+    static void find(List<ModContainer> containers, ASMDataTable table) {
+        for (ModContainer container : containers) {
+            if (container instanceof FMLModContainer) {
+                InitHandler handler = new InitHandler(container);
+                handler.start(table);
+
+                handlers.put(container.getMod(), handler);
+            }
+        }
     }
 
+    public static InitHandler findHandlerForMod(Object o) {
+        for (Map.Entry<Object, InitHandler> entry : handlers.entrySet()) {
+            if (entry.getKey() == o) return entry.getValue();
+        }
+        return null;
+    }
+
+    private InitHandler(ModContainer mod) {
+        this.mod = mod;
+        logger = LogManager.getLogger(String.format("InitHandler[%s]", mod.getModId()));
+        config = new Config("config/" + mod.getModId() + "config.json");
+    }
+
+    @SuppressWarnings("all")
     public static String transformName(String name) throws InvalidRegistryNameException {
         final String nameCopy = name;
         name = name.replace("Item", "");
@@ -120,21 +152,30 @@ public class InitHandler {
         return clazz.newInstance();
     }
 
-    public void start(FMLConstructionEvent event) {
+    private void start(ASMDataTable dataTable) {
         Preconditions.checkArgument(stage == 0, "You have to call this method first");
         stage = 1;
-        SetMultimap<String, ASMData> data = event.getASMHarvestedData().getAnnotationsFor(FMLCommonHandler.instance().findContainerFor(mod));
+        SetMultimap<String, ASMData> data = dataTable.getAnnotationsFor(mod);
 
-        queryModules(data.get(Module.class.getName()));
-        queryRegistryObjects(data.get(RegistryObject.class.getName()));
-        queryItemRenders(data.get(ItemRenderRegistryObject.class.getName()));
-        queryTiles(data.get(TileRegistryObject.class.getName()));
-        queryContainers(data.get(RegistryObjectsContainer.class.getName()));
+        if (data != null) {
+            queryModules(data.get(Module.class.getName()));
+            queryRegistryObjects(data.get(RegistryObject.class.getName()));
+            queryItemRenders(data.get(ItemRenderRegistryObject.class.getName()));
+            queryTiles(data.get(TileRegistryObject.class.getName()));
+            queryContainers(data.get(RegistryObjectsContainer.class.getName()));
 
+            for (String dependency : hardDependencies) {
+                mod.getRequirements().add(new DefaultArtifactVersion(dependency, true));
+            }
+            for (String dependency : softDependencies) {
+                mod.getDependencies().add(new DefaultArtifactVersion(dependency, true));
+            }
+        }
     }
 
-    public void preInit(FMLPreInitializationEvent e) {
-        Preconditions.checkArgument(stage == 1, "You have to call this method after start()");
+    void preInit(FMLPreInitializationEvent e) {
+        if (stage != 1) return;
+        logger.info("Pre initializing mod");
         stage = 2;
         List<String> notLoaded = new LinkedList<>();
         for (String dependency : hardDependencies) {
@@ -288,7 +329,7 @@ public class InitHandler {
             for (ItemRenderRegistryData itemRender : itemRenderClasses) {
                 Item toBind = GameData.getItemRegistry().getObject(itemRender.itemName);
                 if (toBind == null) {
-                    toBind = GameData.getItemRegistry().getObject(FMLCommonHandler.instance().findContainerFor(mod).getModId() + ':' + itemRender.itemName);
+                    toBind = GameData.getItemRegistry().getObject(mod.getModId() + ':' + itemRender.itemName);
                 }
                 if (toBind == null) {
                     logger.warn("Item " + itemRender.itemName + " not registered");
@@ -323,6 +364,10 @@ public class InitHandler {
         for (ModuleData module : moduleClasses) {
             if (!config.getBooleanValue(module.configDependency)) {
                 continue;
+            }
+            if (module.side != COMMON) {
+                if (module.side == CLIENT && e.getSide() != Side.CLIENT) continue;
+                if (module.side == SERVER && e.getSide() != Side.SERVER) continue;
             }
             if (module.dependencies.size() > 0) {
                 boolean flag = false;
@@ -386,16 +431,19 @@ public class InitHandler {
 
     }
 
-    public void init(FMLInitializationEvent e) {
-        Preconditions.checkArgument(stage == 2, "You have to call this method after preInit()");
+    void init(FMLInitializationEvent e) {
+        if (stage != 2) return;
+        logger.info("Initializing mod");
         stage = 3;
         for (ModModule module : modules) {
             module.onInit(e);
         }
     }
 
-    public void postInit(FMLPostInitializationEvent e) {
-        Preconditions.checkArgument(stage == 3, "You have to call this method after init()");
+    void postInit(FMLPostInitializationEvent e) {
+        if (stage != 3) return;
+        stage = 4;
+        logger.info("Post initializing mod");
         for (ModModule module : modules) {
             module.onPostInit(e);
         }
@@ -408,22 +456,33 @@ public class InitHandler {
             try {
                 if (Item.class.isAssignableFrom(fieldClazz) || Block.class.isAssignableFrom(fieldClazz)) {
                     if (!field.isAnnotationPresent(RegistryExcept.class)) {
-                        String id;
+                        String id = null;
+                        String oreDict = "";
                         if (field.isAnnotationPresent(RegistrySpecial.class)) {
-                            id = field.getAnnotation(RegistrySpecial.class).name();
-                        } else {
+                            RegistrySpecial special = field.getAnnotation(RegistrySpecial.class);
+                            id = special.name();
+                            oreDict = special.oreDict();
+                        }
+                        if (Strings.isNullOrEmpty(id)) {
                             id = field.getName();
                         }
+
                         Object o = field.get(clazz);
                         if (o != null) {
                             if (o instanceof Item) {
                                 GameRegistry.registerItem((Item) o, id);
+                                if (!Strings.isNullOrEmpty(oreDict)) {
+                                    OreDictionary.registerOre(oreDict, (Item) o);
+                                }
                             } else if (o instanceof Block) {
                                 if (field.isAnnotationPresent(RegistryBlockSpecial.class)) {
                                     Class<? extends ItemBlock> classItemBlock = field.getAnnotation(RegistryBlockSpecial.class).classItemBlock();
                                     GameRegistry.registerBlock((Block) o, classItemBlock, id);
                                 } else {
                                     GameRegistry.registerBlock((Block) o, id);
+                                }
+                                if (!Strings.isNullOrEmpty(oreDict)) {
+                                    OreDictionary.registerOre(oreDict, (Block) o);
                                 }
                             }
                         } else {
@@ -453,6 +512,7 @@ public class InitHandler {
         throw new Exception("Custom registry method wasn't found");
     }
 
+    @SuppressWarnings("unchecked")
     private void queryTiles(Set<ASMData> data) {
         for (ASMData datum : data) {
             ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
@@ -476,39 +536,29 @@ public class InitHandler {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void queryModules(Set<ASMData> data) {
         for (ASMData datum : data) {
             ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
             boolean mandatory = datum.getAnnotationInfo().get("isMandatory") == null ? false : (Boolean) datum.getAnnotationInfo().get("isMandatory");
             String config = datum.getAnnotationInfo().get("configDependency") == null ? "" : (String) datum.getAnnotationInfo().get("configDependency");
             String rawPriority = datum.getAnnotationInfo().get("priority") == null ? "NORMAL" : ReflectionHelper.getPrivateValue(ModAnnotation.EnumHolder.class, (ModAnnotation.EnumHolder) datum.getAnnotationInfo().get("priority"), "value");
+            String rawSide = datum.getAnnotationInfo().get("sideOnly") == null ? "COMMON" : ReflectionHelper.getPrivateValue(ModAnnotation.EnumHolder.class, (ModAnnotation.EnumHolder) datum.getAnnotationInfo().get("sideOnly"), "value");
 
-            EventPriority priority;
-            if (rawPriority.equals("HIGHEST")) {
-                priority = EventPriority.HIGHEST;
-            } else if (rawPriority.equals("HIGH")) {
-                priority = EventPriority.HIGH;
-            } else if (rawPriority.equals("NORMAL")) {
-                priority = EventPriority.NORMAL;
-            } else if (rawPriority.equals("LOW")) {
-                priority = EventPriority.LOW;
-            } else if (rawPriority.equals("LOWEST")) {
-                priority = EventPriority.LOWEST;
-            } else {
-                priority = EventPriority.NORMAL;
-            }
-
+            EventPriority priority = Enum.valueOf(EventPriority.class, rawPriority);
+            ru.justagod.justacore.initialization.obj.Side side = Enum.valueOf(ru.justagod.justacore.initialization.obj.Side.class, rawSide);
             if (mandatory) {
                 hardDependencies.addAll(dependencies);
             } else {
                 softDependencies.addAll(dependencies);
             }
 
-            ModuleData moduleData = new ModuleData(dependencies, datum.getClassName(), priority, mandatory, config);
+            ModuleData moduleData = new ModuleData(dependencies, datum.getClassName(), priority, mandatory, config, side);
             moduleClasses.add(moduleData);
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void queryRegistryObjects(Set<ASMData> data) {
 
         for (ASMData datum : data) {
@@ -556,7 +606,15 @@ public class InitHandler {
         }
     }
 
-    public static class Config {
+    @Override
+    public String toString() {
+        return "InitHandler{" +
+                "mod=" + mod +
+                ", stage=" + stage +
+                '}';
+    }
+
+    public class Config {
 
         private final Pattern BOOLEAN_FIELD = Pattern.compile("[a-zA-Z]+[ ]*=[ ]*(true|false)[ ]*(//(\\w|\\W)*)?");
         private final Pattern DOUBLE_FIELD = Pattern.compile("[a-zA-Z]+[ ]*=[ ]*[0-9]+[.,][0-9]+[ ]*(//(\\w|\\W)*)?");

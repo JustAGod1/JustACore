@@ -13,6 +13,8 @@ import java.lang.annotation.Target;
 @Target(value = ElementType.FIELD)
 public @interface RegistrySpecial {
 
-    String name();
+    String name() default  "";
+
+    String oreDict() default "";
 
 }

@@ -20,6 +20,13 @@ buildscript {
 apply plugin: 'idea'
 apply plugin: 'forge'
 
+jar {
+    manifest {
+        attributes "FMLAT" : "transformers_at.cfg"
+        attributes 'FMLCorePlugin': 'ru.justagod.justacore.initialization.core.HookLoader'
+        attributes 'FMLCorePluginContainsFMLMod': 'true'
+    }
+}
 
 version = "0.1-alpha"
 group = "ru.justagod.justacore" // http://maven.apache.org/guides/mini/guide-naming-conventions.html

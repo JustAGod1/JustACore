@@ -40,28 +40,21 @@ import ru.justagod.justacore.initialization.data.RegistryData;
 import ru.justagod.justacore.initialization.obj.ModModule;
 import ru.justagod.justacore.initialization.obj.StaticModModule;
 
-import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static ru.justagod.justacore.initialization.obj.Side.CLIENT;
-import static ru.justagod.justacore.initialization.obj.Side.COMMON;
-import static ru.justagod.justacore.initialization.obj.Side.SERVER;
+import static ru.justagod.justacore.initialization.obj.Side.*;
 
 /**
- * Чтобы инициализатор работал корректно вам нужно следовать шаблону
- *
  * @author JustAGod
  */
 public final class InitHandler {
 
+    private static final Map<String, InitHandler> handlers = new LinkedHashMap<>();
     private final Logger logger;
-    private static final Map<Object, InitHandler> handlers = new LinkedHashMap<>();
     private final List<ModModule> modules = new LinkedList<>();
     private final ModContainer mod;
 
@@ -74,11 +67,17 @@ public final class InitHandler {
     private final Set<String> softDependencies = new LinkedHashSet<>();
     private final Set<String> hardDependencies = new LinkedHashSet<>();
 
-    private final Config config;
+    private Config config;
     /**
      * Просто чтобы отлавливать ошибки
      */
     private int stage = 0;
+
+    private InitHandler(ModContainer mod) {
+        this.mod = mod;
+        logger = LogManager.getLogger(String.format("InitHandler[%s]", mod.getModId()));
+
+    }
 
     static void find(List<ModContainer> containers, ASMDataTable table) {
         for (ModContainer container : containers) {
@@ -86,22 +85,16 @@ public final class InitHandler {
                 InitHandler handler = new InitHandler(container);
                 handler.start(table);
 
-                handlers.put(container.getMod(), handler);
+                handlers.put(container.getModId(), handler);
             }
         }
     }
 
-    public static InitHandler findHandlerForMod(Object o) {
-        for (Map.Entry<Object, InitHandler> entry : handlers.entrySet()) {
-            if (entry.getKey() == o) return entry.getValue();
+    public static InitHandler findHandlerForMod(String modid) {
+        for (Map.Entry<String, InitHandler> entry : handlers.entrySet()) {
+            if (entry.getKey().equals(modid)) return entry.getValue();
         }
         return null;
-    }
-
-    private InitHandler(ModContainer mod) {
-        this.mod = mod;
-        logger = LogManager.getLogger(String.format("InitHandler[%s]", mod.getModId()));
-        config = new Config("config/" + mod.getModId() + "config.json");
     }
 
     @SuppressWarnings("all")
@@ -177,6 +170,27 @@ public final class InitHandler {
         if (stage != 1) return;
         logger.info("Pre initializing mod");
         stage = 2;
+        {
+            Class clazz = mod.getMod().getClass();
+            String name = mod.getModId() + "-config.txt";
+            if (clazz.isAnnotationPresent(ConfigExtra.class)) {
+                name = ((ConfigExtra) clazz.getAnnotation(ConfigExtra.class)).name();
+            }
+            config = new Config("config/" + name, clazz.isAnnotationPresent(EmptyConfig.class));
+
+            try {
+                for (Field field : clazz.getDeclaredFields()) {
+                    if (field.isAnnotationPresent(ConfigHolder.class)) {
+                        if (Modifier.isStatic(field.getModifiers()) && field.getType().isAssignableFrom(Config.class)) {
+                            field.setAccessible(true);
+                            field.set(clazz, config);
+                        }
+                    }
+                }
+            } catch (Exception e1) {
+                logger.error("Can't assign config", e1);
+            }
+        }
         List<String> notLoaded = new LinkedList<>();
         for (String dependency : hardDependencies) {
             if (!Loader.isModLoaded(dependency)) {
@@ -212,45 +226,52 @@ public final class InitHandler {
             if (!config.getBooleanValue(registryClass.configDependency)) {
                 continue;
             }
-            Object o;
+            Class clazz;
             try {
-                o = buildInstance(registryClass.clazz);
-            } catch (Exception e1) {
-                logger.warn("Can't load class " + registryClass.clazz);
-                logger.error(e1);
+                clazz = Class.forName(registryClass.clazz);
+            } catch (ClassNotFoundException e1) {
+                logger.error("Can't find class " + registryClass.clazz, e1);
                 continue;
             }
-            if (registryClass.customRegistry) {
+            if (!registryClass.customRegistry || !tryToStaticRegister(clazz)) {
+                Object o;
                 try {
-                    callCustomRegistry(o);
+                    o = buildInstance(registryClass.clazz);
                 } catch (Exception e1) {
-                    logger.warn("Can't call custom registry method in class " + registryClass.clazz);
+                    logger.warn("Can't load class " + registryClass.clazz);
                     logger.error(e1);
                     continue;
                 }
-            } else {
-                String id = registryClass.registryId;
-                if (o instanceof Item) {
-                    GameRegistry.registerItem((Item) o, id);
-                } else if (o instanceof Block) {
-                    if (!Strings.isNullOrEmpty(registryClass.itemBlock)) {
-                        String nameItemBlock = registryClass.itemBlock;
-                        try {
-                            Class classItemBlock = Class.forName(nameItemBlock);
-                            if (!ItemBlock.class.isAssignableFrom(classItemBlock)) {
-                                logger.warn("Class " + nameItemBlock + " must extends ItemBlock");
-                                continue;
-                            }
-                            GameRegistry.registerBlock((Block) o, classItemBlock, id);
-                        } catch (ClassNotFoundException e1) {
-                            logger.error(e1);
-                            continue;
-                        }
-                    } else {
-                        GameRegistry.registerBlock((Block) o, id);
+                if (registryClass.customRegistry) {
+                    try {
+                        callCustomRegistry(o);
+                    } catch (Exception e1) {
+                        logger.warn("Can't call custom registry method in class " + registryClass.clazz);
+                        logger.error(e1);
                     }
                 } else {
-                    logger.warn("Not supported class " + registryClass.clazz);
+                    String id = registryClass.registryId;
+                    if (o instanceof Item) {
+                        GameRegistry.registerItem((Item) o, id);
+                    } else if (o instanceof Block) {
+                        if (!Strings.isNullOrEmpty(registryClass.itemBlock)) {
+                            String nameItemBlock = registryClass.itemBlock;
+                            try {
+                                Class classItemBlock = Class.forName(nameItemBlock);
+                                if (!ItemBlock.class.isAssignableFrom(classItemBlock)) {
+                                    logger.warn("Class " + nameItemBlock + " must extends ItemBlock");
+                                    continue;
+                                }
+                                GameRegistry.registerBlock((Block) o, classItemBlock, id);
+                            } catch (ClassNotFoundException e1) {
+                                logger.error(e1);
+                            }
+                        } else {
+                            GameRegistry.registerBlock((Block) o, id);
+                        }
+                    } else {
+                        logger.warn("Not supported class " + registryClass.clazz);
+                    }
                 }
             }
         }
@@ -268,32 +289,42 @@ public final class InitHandler {
                 }
                 if (flag) continue;
             }
-            Object o;
+            Class clazz;
             try {
-                o = buildInstance(tile.clazz);
-            } catch (Exception e1) {
-                logger.warn("Can't load class " + tile.clazz);
-                logger.error(e1);
+                clazz = Class.forName(tile.clazz);
+            } catch (ClassNotFoundException e1) {
+                logger.error("Can't find class " + tile.clazz, e1);
                 continue;
             }
-            if (tile.customRegistry) {
+            if (!tile.customRegistry || !tryToStaticRegister(clazz)) {
+
+
+                Object o;
                 try {
-                    callCustomRegistry(o);
+                    o = buildInstance(tile.clazz);
                 } catch (Exception e1) {
-                    logger.warn("Can't call custom registry method in class " + tile.clazz);
+                    logger.warn("Can't load class " + tile.clazz);
                     logger.error(e1);
                     continue;
                 }
-            } else {
-                String id = tile.registryId;
-                if (o instanceof TileEntity) {
+                if (tile.customRegistry) {
                     try {
-                        GameRegistry.registerTileEntity((Class<? extends TileEntity>) Class.forName(tile.clazz), id);
-                    } catch (ClassNotFoundException e1) {
+                        callCustomRegistry(o);
+                    } catch (Exception e1) {
+                        logger.warn("Can't call custom registry method in class " + tile.clazz);
                         logger.error(e1);
                     }
                 } else {
-                    logger.warn("Expected: TileEntity actual: " + tile.clazz);
+                    String id = tile.registryId;
+                    if (o instanceof TileEntity) {
+                        try {
+                            GameRegistry.registerTileEntity((Class<? extends TileEntity>) Class.forName(tile.clazz), id);
+                        } catch (ClassNotFoundException e1) {
+                            logger.error(e1);
+                        }
+                    } else {
+                        logger.warn("Expected: TileEntity actual: " + tile.clazz);
+                    }
                 }
             }
         }
@@ -394,6 +425,21 @@ public final class InitHandler {
             logger.info("Module " + module.clazz.substring(module.clazz.lastIndexOf('.') + 1) + " has been loaded");
             ((ModModule) o).onPreInit(e);
         }
+    }
+
+    private boolean tryToStaticRegister(Class clazz) {
+        try {
+            for (Method method : clazz.getDeclaredMethods()) {
+                if (Modifier.isStatic(method.getModifiers()) && method.isAnnotationPresent(CustomRegistry.class)) {
+                    method.setAccessible(true);
+                    method.invoke(clazz);
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Exception while invoking Custom Registry static method", e);
+        }
+        return false;
     }
 
     private ModModule buildModule(String className) throws Exception {
@@ -614,171 +660,5 @@ public final class InitHandler {
                 '}';
     }
 
-    public class Config {
-
-        private final Pattern BOOLEAN_FIELD = Pattern.compile("[a-zA-Z]+[ ]*=[ ]*(true|false)[ ]*(//(\\w|\\W)*)?");
-        private final Pattern DOUBLE_FIELD = Pattern.compile("[a-zA-Z]+[ ]*=[ ]*[0-9]+[.,][0-9]+[ ]*(//(\\w|\\W)*)?");
-        private final Pattern INT_FIELD = Pattern.compile("[a-zA-Z]+[ ]*=[ ]*[0-9]+[ ]*(//(\\w|\\W)*)?");
-        private final Pattern EMPTY_LINE = Pattern.compile("[ ]*(//(\\w|\\W)*)?");
-
-        private final Pattern VALUE_NAME = Pattern.compile("[a-zA-Z]+");
-        private final Pattern BOOLEAN_VALUE = Pattern.compile("(true|false)");
-        private final Pattern DOUBLE_VALUE = Pattern.compile("[0-9]+[.,][0-9]+");
-        private final Pattern INT_VALUE = Pattern.compile("[0-9]+");
-
-        private final Pattern COMMENT = Pattern.compile("[ ]*(//(\\w|\\W)*)?");
-
-        private final File file;
-
-        private Map<String, Object> values = new LinkedHashMap<>();
-
-        public Config(File file) {
-            this.file = file;
-            load();
-        }
-
-        public Config(String name) {
-            this(new File(name));
-        }
-
-        private void load() {
-            try {
-                File folder = new File(file.getParent());
-                if (!folder.exists()) {
-                    folder.mkdirs();
-                }
-                if (!file.exists()) {
-                    file.createNewFile();
-
-                    Method method = ClassLoader.class.getDeclaredMethod("getClassLoader", Class.class);
-                    method.setAccessible(true);
-                    ClassLoader loader = (ClassLoader) method.invoke(ClassLoader.class, InitHandler.class);
-
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(loader.getResourceAsStream("config.txt")));
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-
-                    while (reader.ready()) {
-                        String line = reader.readLine();
-                        parseLine(line);
-                        writer.write(line + '\n');
-                    }
-                    writer.close();
-                    reader.close();
-                } else {
-                    BufferedReader reader = new BufferedReader(new FileReader(file));
-
-                    while (reader.ready()) {
-                        parseLine(reader.readLine());
-                    }
-
-                    reader.close();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                logger.warn("Config file wasn't loaded successful");
-            }
-        }
-
-        private void parseLine(String line) {
-            if (BOOLEAN_FIELD.matcher(line).matches()) {
-                line = COMMENT.matcher(line).replaceAll("");
-
-                Matcher matcher = VALUE_NAME.matcher(line);
-                matcher.find();
-                String name = line.substring(matcher.start(), matcher.end());
-
-                matcher = BOOLEAN_VALUE.matcher(line);
-                matcher.find();
-                Boolean value = Boolean.valueOf(line.substring(matcher.start(), matcher.end()));
-
-                values.put(name, value);
-            } else if (INT_FIELD.matcher(line).matches()) {
-                line = COMMENT.matcher(line).replaceAll("");
-
-                Matcher matcher = VALUE_NAME.matcher(line);
-                matcher.find();
-
-                String name = line.substring(matcher.start(), matcher.end());
-
-                matcher = INT_VALUE.matcher(line);
-                matcher.find();
-                Integer value = Integer.valueOf(line.substring(matcher.start(), matcher.end()));
-
-                values.put(name, value);
-            } else if (DOUBLE_FIELD.matcher(line).matches()) {
-                line = COMMENT.matcher(line).replaceAll("");
-
-                Matcher matcher = VALUE_NAME.matcher(line);
-                matcher.find();
-                String name = line.substring(matcher.start(), matcher.end());
-
-                matcher = DOUBLE_VALUE.matcher(line);
-                matcher.find();
-                Double value = Double.valueOf(line.substring(matcher.start(), matcher.end()));
-
-                values.put(name, value);
-            } else if (!EMPTY_LINE.matcher(line).matches()) {
-                throw new RuntimeException("Invalid line format: " + line + '"');
-            }
-        }
-
-        public boolean getBooleanValue(String key) {
-            return getBooleanValue(key, false);
-        }
-
-        public boolean getBooleanValue(String key, boolean _default) {
-            if (values.containsKey(key)) {
-                Object object = values.get(key);
-
-                if (object instanceof Boolean) {
-                    return (Boolean) object;
-                } else {
-                    return _default;
-                }
-            } else {
-                return _default;
-            }
-        }
-
-        public int getIntValue(String key) {
-            return getIntValue(key, 0);
-        }
-
-        public int getIntValue(String key, int _default) {
-            if (values.containsKey(key)) {
-                Object object = values.get(key);
-
-                if (object instanceof Integer) {
-                    return (Integer) object;
-                } else if (object instanceof Double) {
-                    return (int) object;
-                } else {
-                    return _default;
-                }
-            } else {
-                return _default;
-            }
-        }
-
-        public double getDoubleValue(String key) {
-            return getDoubleValue(key, 0);
-        }
-
-        public double getDoubleValue(String key, double _default) {
-            if (values.containsKey(key)) {
-                Object object = values.get(key);
-
-                if (object instanceof Double) {
-                    return (Double) object;
-                } else if (object instanceof Integer) {
-                    return (double) ((Integer) object);
-                } else {
-                    return _default;
-                }
-            } else {
-                return _default;
-            }
-        }
-    }
 
 }

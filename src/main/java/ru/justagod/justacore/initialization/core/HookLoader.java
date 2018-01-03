@@ -4,13 +4,18 @@ import cpw.mods.fml.relauncher.IFMLLoadingPlugin;
 import net.minecraft.launchwrapper.IClassTransformer;
 import org.objectweb.asm.*;
 
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by JustAGod on 28.12.2017.
  */
 @SuppressWarnings("unused")
 public class HookLoader implements IFMLLoadingPlugin, IClassTransformer {
+
+    static Set<String> toModify = new LinkedHashSet<>();
+
     @Override
     public String[] getASMTransformerClass() {
         return new String[]{HookLoader.class.getName()};
@@ -63,6 +68,17 @@ public class HookLoader implements IFMLLoadingPlugin, IClassTransformer {
                 }
             };
             cr.accept(ca, ClassReader.SKIP_FRAMES);
+            return cw.toByteArray();
+        } else if (toModify.contains(transformedName)) {
+            ClassReader cr = new ClassReader(basicClass);
+            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_MAXS);
+            ClassVisitor cv = new ClassVisitor(Opcodes.ASM4, cw) {
+                @Override
+                public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+                    return super.visitField((access & Opcodes.ACC_FINAL) == Opcodes.ACC_FINAL && (access & Opcodes.ACC_STATIC) == Opcodes.ACC_STATIC ? access ^ Opcodes.ACC_FINAL : access, name, desc, signature, value);
+                }
+            };
+            cr.accept(cv, ClassReader.SKIP_FRAMES);
             return cw.toByteArray();
         } else return basicClass;
     }

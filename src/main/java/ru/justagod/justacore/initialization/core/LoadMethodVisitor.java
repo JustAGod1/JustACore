@@ -1,9 +1,13 @@
 package ru.justagod.justacore.initialization.core;
 
 import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.discovery.ASMDataTable;
 import cpw.mods.fml.common.discovery.ModDiscoverer;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+
+import java.util.Set;
 
 /**
  * Created by JustAGod on 28.12.2017.
@@ -18,6 +22,10 @@ public class LoadMethodVisitor extends org.objectweb.asm.MethodVisitor {
     @SuppressWarnings("unused")
     public static void addSpecial(Loader loader, ModDiscoverer discoverer) {
         InitHandler.find(loader.getActiveModList(), discoverer.getASMTable());
+        Set<ASMDataTable.ASMData> data = discoverer.getASMTable().getAll(Mod.class.getName());
+        for (ASMDataTable.ASMData datum : data) {
+            HookLoader.toModify.add(datum.getClassName());
+        }
     }
 
     @Override

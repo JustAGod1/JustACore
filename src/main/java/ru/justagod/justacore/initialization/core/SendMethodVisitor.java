@@ -19,7 +19,7 @@ public class SendMethodVisitor extends MethodVisitor {
     @SuppressWarnings("unused")
     public static void initialize(FMLEvent event, ModContainer container) {
         try {
-            InitHandler handler = InitHandler.findHandlerForMod(container.getMod());
+            InitHandler handler = InitHandler.findHandlerForMod(container.getModId());
             if (handler != null) {
                 if (event instanceof FMLPreInitializationEvent) {
                     handler.preInit((FMLPreInitializationEvent) event);

@@ -5,39 +5,46 @@
 Initialization is part of JustACore based on java annotation that simplify mod's initialization. 
 It provides:
  - Modules
+ - Advanced and automatic configs
  - Automatic registration of Items, Tiles, Item Renderers and Blocks
 
 # Setup
 Setup is very easy! You just have to type following text in your main mod class:
 ```java
-@Mod(modid = "modid", name = "Simple Mod", version = "0.1")
+@Mod(modid = "modid", name = "Simple Mod", version = "0.1", dependencies = "required-after:jac")
+public class Main {}
+```
+Looks very simple, I think. You can extend it with some more annotations.
+```java
+@ConfigExtra(name = "Simple.txt")
+@Mod(modid = "jac", name = "JustACore", version = "0.1")
 public class Main {
-
-    private InitHandler initHandler = new InitHandler(this);
-
-    @EventHandler
-    public void init(FMLInitializationEvent e) {
-        initHandler.init(e);
-    }
-
-    @EventHandler
-    public void init(FMLPreInitializationEvent e) {
-        initHandler.preInit(e);
-    }
-
-    @EventHandler
-    public void init(FMLPostInitializationEvent e) {
-        initHandler.postInit(e);
-    }
-
-    @EventHandler
-    public void init(FMLConstructionEvent e) {
-        initHandler.start(e);
-    }
-    
+    @ConfigHolder
+    public static final Config config = null;
 }
 ```
-Congratulations! You did it!
+Now JustACore will create config file with name: Simple.txt(default is config-\<modid\>.txt) and automatically assign config instance to field config. Yes it's ancient magic.
+# Config setup
+
+Just a core provides you useful config's system. So you often want to add default values to your config or create config file with predefined text. So you can just add file with name config.txt to your resource root. Config manager will automatically create file if not exists and copy text from this file. Or you can simply write this text in your __Initialization__ stage: 
+```java
+@ConfigExtra(name = "Simple.txt")
+@Mod(modid = "jac", name = "JustACore", version = "0.1")
+public class Main {
+
+    @ConfigHolder
+    public static final Config config = null;
+
+    @Mod.EventHandler
+    public void init(FMLInitializationEvent e) {
+        List<Config.ConfigEntry> entries = new LinkedList<>();
+        entries.add(new Config.ConfigEntry("Sample", "Sample value", "Just for example"));
+        config.addDefaultValues(entries);
+    }
+}
+```
+First parameter is field name. Second is field value. Third parameter' __s__ are comments. I think it's quiet simple.
+
 # What can you do now
 
 Now you doesn't need to call all your modules from your common proxy. Doesn't need to look up for loaded mods and than call your integration modules. My library will do it for you.
@@ -115,6 +122,8 @@ public abstract class SimpleModule {
 
 ```
 And it will work fine!
+
+Annotation Module(and a lot of another) also has attribute "configDependency".  
 
 # Auto registry
 

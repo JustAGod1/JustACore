@@ -3,10 +3,7 @@ package ru.justagod.justacore.initialization.core;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.SetMultimap;
-import cpw.mods.fml.common.FMLCommonHandler;
-import cpw.mods.fml.common.FMLModContainer;
-import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.ModContainer;
+import cpw.mods.fml.common.*;
 import cpw.mods.fml.common.discovery.ASMDataTable;
 import cpw.mods.fml.common.discovery.ASMDataTable.ASMData;
 import cpw.mods.fml.common.discovery.asm.ModAnnotation;
@@ -25,25 +22,20 @@ import net.minecraft.item.ItemBlock;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraftforge.client.IItemRenderer;
 import net.minecraftforge.client.MinecraftForgeClient;
-import net.minecraftforge.oredict.OreDictionary;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.justagod.justacore.initialization.IllegalReturnTypeException;
-import ru.justagod.justacore.initialization.InvalidModifiersException;
-import ru.justagod.justacore.initialization.InvalidParametersException;
 import ru.justagod.justacore.initialization.InvalidRegistryNameException;
 import ru.justagod.justacore.initialization.annotation.*;
-import ru.justagod.justacore.initialization.data.ItemRenderRegistryData;
-import ru.justagod.justacore.initialization.data.ModuleData;
-import ru.justagod.justacore.initialization.data.RegistryContainerData;
-import ru.justagod.justacore.initialization.data.RegistryData;
+import ru.justagod.justacore.initialization.core.config.Config;
+import ru.justagod.justacore.initialization.core.config.ConfigType;
+import ru.justagod.justacore.initialization.core.config.TextConfig;
+import ru.justagod.justacore.initialization.data.*;
+import ru.justagod.justacore.initialization.language.JavaAdapter;
+import ru.justagod.justacore.initialization.language.LanguageAdapter;
+import ru.justagod.justacore.initialization.language.ScalaAdapter;
 import ru.justagod.justacore.initialization.obj.ModModule;
-import ru.justagod.justacore.initialization.obj.StaticModModule;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.io.File;
 import java.util.*;
 
 import static ru.justagod.justacore.initialization.obj.Side.*;
@@ -55,7 +47,7 @@ public final class InitHandler {
 
     private static final Map<String, InitHandler> handlers = new LinkedHashMap<>();
     private final Logger logger;
-    private final List<ModModule> modules = new LinkedList<>();
+    private final List<ModuleWrapper> modules = new LinkedList<>();
     private final ModContainer mod;
 
     private final Set<RegistryData> registryClasses = new LinkedHashSet<>();
@@ -68,6 +60,7 @@ public final class InitHandler {
     private final Set<String> hardDependencies = new LinkedHashSet<>();
 
     private Config config;
+    private LanguageAdapter adapter;
     /**
      * Просто чтобы отлавливать ошибки
      */
@@ -119,38 +112,35 @@ public final class InitHandler {
         return name.toLowerCase();
     }
 
+    @SuppressWarnings("unused")
     public Config getConfig() {
         return config;
     }
 
-    private Object buildInstance(String className) throws Exception {
-        Class<?> clazz = Class.forName(className);
-
-        for (Method method : clazz.getDeclaredMethods()) {
-            if (method.isAnnotationPresent(InstanceFactory.class)) {
-                if (!Modifier.isStatic(method.getModifiers())) {
-                    throw new InvalidModifiersException(className, method.getName());
-                }
-                if (!method.getReturnType().isAssignableFrom(clazz)) {
-                    throw new IllegalReturnTypeException(className, clazz.getName());
-                }
-                if (method.getParameterCount() > 0) throw new InvalidParametersException(className, method.getName());
-
-                method.setAccessible(true);
-                return method.invoke(clazz);
-            }
-        }
-        Constructor constructor = clazz.getConstructor();
-        constructor.newInstance();
-        return clazz.newInstance();
-    }
 
     private void start(ASMDataTable dataTable) {
         Preconditions.checkArgument(stage == 0, "You have to call this method first");
         stage = 1;
         SetMultimap<String, ASMData> data = dataTable.getAnnotationsFor(mod);
 
+
         if (data != null) {
+            String language = "";
+            for (ASMData asmData : data.get(Mod.class.getName())) {
+                String tmp = (String) asmData.getAnnotationInfo().get("modLanguage");
+                language = tmp != null ? tmp : "java";
+            }
+            switch (language) {
+                case "scala":
+                    adapter = new ScalaAdapter();
+                    break;
+                case "java":
+                    adapter = new JavaAdapter();
+                    break;
+                default:
+                    logger.error("Can't identify mod language (" + language + ')');
+                    return;
+            }
             queryModules(data.get(Module.class.getName()));
             queryRegistryObjects(data.get(RegistryObject.class.getName()));
             queryItemRenders(data.get(ItemRenderRegistryObject.class.getName()));
@@ -166,30 +156,34 @@ public final class InitHandler {
         }
     }
 
+    @SuppressWarnings("unchecked")
     void preInit(FMLPreInitializationEvent e) {
         if (stage != 1) return;
         logger.info("Pre initializing mod");
         stage = 2;
+
         {
             Class clazz = mod.getMod().getClass();
-            String name = mod.getModId() + "-config.txt";
+            Class<? extends Config> configClazz = TextConfig.class;
+            String postfix = "txt";
+            String name = null;
             if (clazz.isAnnotationPresent(ConfigExtra.class)) {
                 name = ((ConfigExtra) clazz.getAnnotation(ConfigExtra.class)).name();
+                ConfigType type = ((ConfigExtra) clazz.getAnnotation(ConfigExtra.class)).type();
+                postfix = type.getPostfix();
+                configClazz = type.getClazz();
             }
-            config = new Config("config/" + name, clazz.isAnnotationPresent(EmptyConfig.class));
-
+            if (Strings.isNullOrEmpty(name)) {
+                name = mod.getModId() + "-config." + postfix;
+            }
             try {
-                for (Field field : clazz.getDeclaredFields()) {
-                    if (field.isAnnotationPresent(ConfigHolder.class)) {
-                        if (Modifier.isStatic(field.getModifiers()) && field.getType().isAssignableFrom(Config.class)) {
-                            field.setAccessible(true);
-                            field.set(clazz, config);
-                        }
-                    }
-                }
+                config = configClazz.getConstructor(String.class, Class.class, boolean.class).newInstance("config/" + name, clazz, clazz.isAnnotationPresent(EmptyConfig.class));
             } catch (Exception e1) {
-                logger.error("Can't assign config", e1);
+                logger.error("Can't initialize config", e1);
+                config = new TextConfig((File) null, true);
             }
+
+            adapter.setConfig(clazz, config);
         }
         List<String> notLoaded = new LinkedList<>();
         for (String dependency : hardDependencies) {
@@ -233,18 +227,17 @@ public final class InitHandler {
                 logger.error("Can't find class " + registryClass.clazz, e1);
                 continue;
             }
-            if (!registryClass.customRegistry || !tryToStaticRegister(clazz)) {
+            if (!registryClass.customRegistry || !adapter.tryToStaticRegister(clazz)) {
                 Object o;
                 try {
-                    o = buildInstance(registryClass.clazz);
+                    o = adapter.buildInstance(Class.forName(registryClass.clazz, true, mod.getMod().getClass().getClassLoader()));
                 } catch (Exception e1) {
-                    logger.warn("Can't load class " + registryClass.clazz);
-                    logger.error(e1);
+                    logger.error("Can't load class " + registryClass.clazz, e1);
                     continue;
                 }
                 if (registryClass.customRegistry) {
                     try {
-                        callCustomRegistry(o);
+                        adapter.callCustomRegistry(o);
                     } catch (Exception e1) {
                         logger.warn("Can't call custom registry method in class " + registryClass.clazz);
                         logger.error(e1);
@@ -296,12 +289,11 @@ public final class InitHandler {
                 logger.error("Can't find class " + tile.clazz, e1);
                 continue;
             }
-            if (!tile.customRegistry || !tryToStaticRegister(clazz)) {
-
+            if (!tile.customRegistry || !adapter.tryToStaticRegister(clazz)) {
 
                 Object o;
                 try {
-                    o = buildInstance(tile.clazz);
+                    o = adapter.buildInstance(Class.forName(tile.clazz, true, mod.getMod().getClass().getClassLoader()));
                 } catch (Exception e1) {
                     logger.warn("Can't load class " + tile.clazz);
                     logger.error(e1);
@@ -309,7 +301,7 @@ public final class InitHandler {
                 }
                 if (tile.customRegistry) {
                     try {
-                        callCustomRegistry(o);
+                        adapter.callCustomRegistry(o);
                     } catch (Exception e1) {
                         logger.warn("Can't call custom registry method in class " + tile.clazz);
                         logger.error(e1);
@@ -352,7 +344,7 @@ public final class InitHandler {
                 logger.error(e1);
                 continue;
             }
-            registerFields(clazz);
+            adapter.registerFields(clazz);
 
 
         }
@@ -368,7 +360,7 @@ public final class InitHandler {
                 }
                 Object o;
                 try {
-                    o = buildInstance(itemRender.clazz);
+                    o = adapter.buildInstance(Class.forName(itemRender.clazz, true, mod.getMod().getClass().getClassLoader()));
                 } catch (Exception e1) {
                     logger.warn("Can't load class " + itemRender.clazz);
                     logger.error(e1);
@@ -380,11 +372,10 @@ public final class InitHandler {
                 }
                 if (itemRender.customRegistry) {
                     try {
-                        callCustomRegistry(o);
+                        adapter.callCustomRegistry(o);
                     } catch (Exception e1) {
                         logger.warn("Can't call custom registry method in class " + itemRender.clazz);
                         logger.error(e1);
-                        continue;
                     }
                 } else {
                     MinecraftForgeClient.registerItemRenderer(toBind, (IItemRenderer) o);
@@ -412,7 +403,7 @@ public final class InitHandler {
             }
             Object o;
             try {
-                o = buildModule(module.clazz);
+                o = adapter.buildModule(Class.forName(module.clazz, true, mod.getMod().getClass().getClassLoader()));
             } catch (Exception e1) {
                 logger.error("Can't load module " + module.clazz, e1);
                 if (module.mandatory) {
@@ -421,36 +412,20 @@ public final class InitHandler {
                 }
                 continue;
             }
-            modules.add((ModModule) o);
+            ModuleWrapper wrapper = new ModuleWrapper((ModModule) o, module.mandatory, module.clazz.substring(module.clazz.lastIndexOf('.') + 1));
+            modules.add(wrapper);
             logger.info("Module " + module.clazz.substring(module.clazz.lastIndexOf('.') + 1) + " has been loaded");
-            ((ModModule) o).onPreInit(e);
-        }
-    }
 
-    private boolean tryToStaticRegister(Class clazz) {
-        try {
-            for (Method method : clazz.getDeclaredMethods()) {
-                if (Modifier.isStatic(method.getModifiers()) && method.isAnnotationPresent(CustomRegistry.class)) {
-                    method.setAccessible(true);
-                    method.invoke(clazz);
-                    return true;
-                }
+            try {
+                wrapper.module.onPreInit(e);
+            } catch (Exception e1) {
+                RuntimeException exception = new RuntimeException("Exception while init module " + wrapper.name, e1);
+                if (wrapper.mandatory) throw exception;
+                else logger.error("", exception);
             }
-        } catch (Exception e) {
-            logger.error("Exception while invoking Custom Registry static method", e);
-        }
-        return false;
-    }
-
-    private ModModule buildModule(String className) throws Exception {
-        Class clazz = Class.forName(className);
-
-        if (!ModModule.class.isAssignableFrom(clazz)) {
-            return new StaticModModule(clazz);
-        } else {
-            return (ModModule) buildInstance(className);
         }
     }
+
 
     private void sortModules() {
         List<ModuleData> highest = new LinkedList<>();
@@ -481,8 +456,15 @@ public final class InitHandler {
         if (stage != 2) return;
         logger.info("Initializing mod");
         stage = 3;
-        for (ModModule module : modules) {
-            module.onInit(e);
+        for (ModuleWrapper module : modules) {
+            try {
+                module.module.onInit(e);
+            } catch (Exception e1) {
+                RuntimeException exception = new RuntimeException("Exception while init module " + module.name, e1);
+                if (module.mandatory) throw exception;
+                else logger.error("", exception);
+
+            }
         }
     }
 
@@ -490,73 +472,17 @@ public final class InitHandler {
         if (stage != 3) return;
         stage = 4;
         logger.info("Post initializing mod");
-        for (ModModule module : modules) {
-            module.onPostInit(e);
-        }
-    }
-
-    private void registerFields(Class clazz) {
-        for (Field field : clazz.getFields()) {
-            if (!Modifier.isStatic(field.getModifiers())) continue;
-            Class fieldClazz = field.getType();
+        for (ModuleWrapper module : modules) {
             try {
-                if (Item.class.isAssignableFrom(fieldClazz) || Block.class.isAssignableFrom(fieldClazz)) {
-                    if (!field.isAnnotationPresent(RegistryExcept.class)) {
-                        String id = null;
-                        String oreDict = "";
-                        if (field.isAnnotationPresent(RegistrySpecial.class)) {
-                            RegistrySpecial special = field.getAnnotation(RegistrySpecial.class);
-                            id = special.name();
-                            oreDict = special.oreDict();
-                        }
-                        if (Strings.isNullOrEmpty(id)) {
-                            id = field.getName();
-                        }
-
-                        Object o = field.get(clazz);
-                        if (o != null) {
-                            if (o instanceof Item) {
-                                GameRegistry.registerItem((Item) o, id);
-                                if (!Strings.isNullOrEmpty(oreDict)) {
-                                    OreDictionary.registerOre(oreDict, (Item) o);
-                                }
-                            } else if (o instanceof Block) {
-                                if (field.isAnnotationPresent(RegistryBlockSpecial.class)) {
-                                    Class<? extends ItemBlock> classItemBlock = field.getAnnotation(RegistryBlockSpecial.class).classItemBlock();
-                                    GameRegistry.registerBlock((Block) o, classItemBlock, id);
-                                } else {
-                                    GameRegistry.registerBlock((Block) o, id);
-                                }
-                                if (!Strings.isNullOrEmpty(oreDict)) {
-                                    OreDictionary.registerOre(oreDict, (Block) o);
-                                }
-                            }
-                        } else {
-                            logger.warn("Field " + field.getName() + " is null");
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                logger.warn("Can't register field " + field.getName());
-                logger.error(e);
+                module.module.onPostInit(e);
+            } catch (Exception e1) {
+                RuntimeException exception = new RuntimeException("Exception while init module " + module.name, e1);
+                if (module.mandatory) throw exception;
+                else logger.error("", exception);
             }
         }
     }
 
-    private void callCustomRegistry(Object o) throws Exception {
-        Class clazz = o.getClass();
-
-        for (Method method : clazz.getMethods()) {
-            if (method.isAnnotationPresent(CustomRegistry.class)) {
-                if (Modifier.isStatic(method.getModifiers())) throw new Exception("Method has no be static");
-                if (method.getParameterCount() > 0) throw new Exception("Method has not have parameters");
-
-                method.invoke(o);
-                return;
-            }
-        }
-        throw new Exception("Custom registry method wasn't found");
-    }
 
     @SuppressWarnings("unchecked")
     private void queryTiles(Set<ASMData> data) {
@@ -630,10 +556,10 @@ public final class InitHandler {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void queryContainers(Set<ASMData> data) {
         for (ASMData datum : data) {
             ArrayList<String> dependencies = datum.getAnnotationInfo().get("dependencies") == null ? new ArrayList<>() : (ArrayList<String>) datum.getAnnotationInfo().get("dependencies");
-            String id = datum.getAnnotationInfo().get("registryId") == null ? "" : (String) datum.getAnnotationInfo().get("registryId");
             Boolean customRegistry = datum.getAnnotationInfo().get("customRegistry") == null ? false : (Boolean) datum.getAnnotationInfo().get("customRegistry");
             String config = datum.getAnnotationInfo().get("configDependency") == null ? "" : (String) datum.getAnnotationInfo().get("configDependency");
 

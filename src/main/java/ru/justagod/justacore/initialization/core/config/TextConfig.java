@@ -1,12 +1,12 @@
-package ru.justagod.justacore.initialization.core;
+package ru.justagod.justacore.initialization.core.config;
 
 import com.google.common.base.Strings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import ru.justagod.justacore.initialization.core.InitHandler;
 
 import java.io.*;
 import java.lang.reflect.Method;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -15,12 +15,12 @@ import java.util.regex.Pattern;
 /**
  * Created by JustAGod on 03.01.2018.
  */
-public class Config {
+public class TextConfig extends Config {
 
-    private final Pattern BOOLEAN_FIELD = Pattern.compile("[a-zA-Z.,]+[ ]*=[ ]*(true|false)[ ]*(//(\\w|\\W)*)?");
-    private final Pattern DOUBLE_FIELD = Pattern.compile("[a-zA-Z.,]+[ ]*=[ ]*[0-9]+[.,][0-9]+[ ]*(//(\\w|\\W)*)?");
-    private final Pattern STRING_FIELD = Pattern.compile("[a-zA-Z.,]+[ ]*=[ ]*[a-zA-Z.,а-яА-Я]+[ ]*(//(\\w|\\W)*)?");
-    private final Pattern INT_FIELD = Pattern.compile("[a-zA-Z.,]+[ ]*=[ ]*[0-9]+[ ]*(//(\\w|\\W)*)?");
+    private final Pattern BOOLEAN_FIELD = Pattern.compile("[ ]*[a-zA-Z.,]+[ ]*=[ ]*(true|false)[ ]*(//(\\w|\\W)*)?");
+    private final Pattern DOUBLE_FIELD = Pattern.compile("[ ]*[a-zA-Z.,]+[ ]*=[ ]*[0-9]+[.,][0-9]+[ ]*(//(\\w|\\W)*)?");
+    private final Pattern STRING_FIELD = Pattern.compile("[ ]*[a-zA-Z.,]+[ ]*=[ ]*[a-zA-Z.,а-яА-Я]+[ ]*(//(\\w|\\W)*)?");
+    private final Pattern INT_FIELD = Pattern.compile("[ ]*[a-zA-Z.,]+[ ]*=[ ]*[0-9]+[ ]*(//(\\w|\\W)*)?");
     private final Pattern EMPTY_LINE = Pattern.compile("[ ]*(//(\\w|\\W)*)?");
 
     private final Pattern VALUE_NAME = Pattern.compile("[a-zA-Z.,]+");
@@ -30,78 +30,68 @@ public class Config {
 
     private final Pattern COMMENT = Pattern.compile("[ ]*(//(\\w|\\W)*)?");
 
-    private final File file;
-    private final Class<?> clazz;
-    private final boolean empty;
+    private static Logger logger = LogManager.getLogger();
 
-    private LinkedHashMap<String, Object> values = new LinkedHashMap<>();
-    private Logger logger = LogManager.getLogger();
-
-    public Config(File file, boolean empty) {
-        this(file, null, empty);
+    public TextConfig(File file, boolean empty) {
+        super(file, empty);
     }
 
-    public Config(File file, Class<?> clazz, boolean empty) {
-        this.file = file;
-        this.clazz = clazz;
-        this.empty = empty;
-        load();
+    public TextConfig(File file, Class<?> clazz, boolean empty) {
+        super(file, clazz, empty);
     }
 
-    public Config(String name, boolean empty) {
-        this(new File(name), empty);
+    public TextConfig(String name, boolean empty) {
+        super(name, empty);
     }
 
-    public Config(String name, Class<?> clazz, boolean empty) {
-        this(new File(name), clazz, empty);
+    public TextConfig(String name, Class<?> clazz, boolean empty) {
+        super(name, clazz, empty);
     }
 
     @SuppressWarnings("all")
-    private void load() {
-        if (!empty) {
-            try {
-                if (file.getParent() != null) {
-                    File folder = new File(file.getParent());
-                    if (!folder.exists()) {
-                        folder.mkdirs();
-                    }
+    protected void load() {
+        try {
+            if (file.getParent() != null) {
+                File folder = new File(file.getParent());
+                if (!folder.exists()) {
+                    folder.mkdirs();
                 }
-                if (!file.exists()) {
-                    file.createNewFile();
-
-                    InputStream in;
-                    if (clazz != null) {
-                        Method method = ClassLoader.class.getDeclaredMethod("getClassLoader", Class.class);
-                        method.setAccessible(true);
-                        ClassLoader loader = (ClassLoader) method.invoke(ClassLoader.class, InitHandler.class);
-                        in = loader.getResourceAsStream("config.txt");
-                    } else {
-                        in = ClassLoader.getSystemResourceAsStream("config.txt");
-                    }
-
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(file));
-
-                    while (reader.ready()) {
-                        String line = reader.readLine();
-                        parseLine(line);
-                        writer.write(line + '\n');
-                    }
-                    writer.close();
-                    reader.close();
-
-                } else {
-                    BufferedReader reader = new BufferedReader(new FileReader(file));
-
-                    while (reader.ready()) {
-                        parseLine(reader.readLine());
-                    }
-
-                    reader.close();
-                }
-            } catch (Exception e) {
-                logger.error("Config file wasn't loaded successful", e);
             }
+            if (!file.exists()) {
+                file.createNewFile();
+
+                InputStream in;
+                if (clazz != null) {
+                    Method method = ClassLoader.class.getDeclaredMethod("getClassLoader", Class.class);
+                    method.setAccessible(true);
+                    ClassLoader loader = (ClassLoader) method.invoke(ClassLoader.class, InitHandler.class);
+                    in = loader.getResourceAsStream("config.txt");
+                } else {
+                    in = ClassLoader.getSystemResourceAsStream("config.txt");
+                }
+
+                BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+                BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+
+                while (reader.ready()) {
+                    String line = reader.readLine();
+                    parseLine(line);
+                    writer.write(line + '\n');
+                }
+                writer.close();
+                reader.close();
+
+            } else {
+                BufferedReader reader = new BufferedReader(new FileReader(file));
+
+                while (reader.ready()) {
+                    parseLine(reader.readLine());
+                }
+
+                reader.close();
+            }
+        } catch (Exception e) {
+            logger.error("Config file wasn't loaded successful", e);
         }
     }
 
@@ -111,8 +101,9 @@ public class Config {
      *
      * @param values Дефолтные параметры конфига
      */
+    @Override
     @SuppressWarnings({"unused", "unchecked"})
-    public void addDefaultValues(List<ConfigEntry> values) {
+    public void addDefaultValues(List<Config.ConfigEntry> values) {
         Map<String, Object> extra = (Map<String, Object>) this.values.clone();
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
             for (ConfigEntry value : values) {
@@ -271,21 +262,5 @@ public class Config {
         return values.getOrDefault(key, _default).toString();
     }
 
-    public static class ConfigEntry {
-        private final String name;
-        private final String[] comment;
-        private final Object value;
 
-        public ConfigEntry(String name, Object value, String... comment) {
-            this.name = name;
-            this.comment = comment;
-            this.value = value;
-        }
-
-        public ConfigEntry(String name, Object value) {
-            this.name = name;
-            this.value = value;
-            comment = null;
-        }
-    }
 }

@@ -48,9 +48,4 @@ public class TutorialGui extends PichGui {
         addOverlay(parent);
         parent.addOverlay(o);
     }
-
-    @Override
-    protected void mouseClickMove(int mouseX, int mouseY, int lastButton, long time) {
-        super.mouseClickMove(mouseX, mouseY, lastButton, time);
-    }
 }
